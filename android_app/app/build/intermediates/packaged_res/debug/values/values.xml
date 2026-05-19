@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#000000</color>
+    <color name="blue_500">#FF3B82F6</color>
+    <color name="progress_backend">#1A6200EE</color>
+    <color name="progress_background">#1A6200EE</color>
+    <color name="purple_200">#FFBB86FC</color>
+    <color name="purple_500">#FF6200EE</color>
+    <color name="purple_700">#FF3700B3</color>
+    <color name="teal_200">#FF03DAC5</color>
+    <color name="teal_500">#FF009688</color>
+    <color name="white">#FFFFFFFF</color>
+    <string name="app_name">Magic Bot AI</string>
+    <style name="Theme.MagicBotAI" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/purple_500</item>
+        <item name="colorPrimaryVariant">@color/purple_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="colorSecondary">@color/teal_200</item>
+        <item name="colorSecondaryVariant">@color/teal_500</item>
+        <item name="colorOnSecondary">@color/black</item>
+        <item name="android:statusBarColor">#1E293B</item>
+        <item name="android:navigationBarColor">#1E293B</item>
+    </style>
+</resources>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="[^"]*">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Bot Detail - AI Magic Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        @media (max-width: 576px) {
+            .page-header .d-flex.justify-content-between {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .page-header .d-flex.justify-content-between > div:last-child {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                width: 100%;
+            }
+            .page-header .d-flex.justify-content-between > div:last-child .btn {
+                flex: 1;
+                text-align: center;
+                font-size: 0.85rem;
+                padding: 8px 12px;
+            }
+            .page-header h2 {
+                font-size: 1.3rem;
+            }
+            .page-header p.lead {
+                font-size: 0.9rem;
+            }
+            /* Key-value table on mobile */
+            .table-bordered th, .table-bordered td {
+                padding: 8px 10px;
+                font-size: 0.85rem;
+            }
+            .table-bordered th {
+                width: 30% !important;
+            }
+            .max-w-lg {
+                max-width: 100% !important;
+            }
+        }
+    </style>
+</head>
+<body class="sidebar-layout">
+    {% with active_page='my_bots' %}
+    {% include '_sidebar.html' %}
+    {% endwith %}
+    
+    <div class="sidebar-content">
+    <div class="page-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-robot"></i> Bot Detail</h2>
+                    <p class="lead mb-0">Information for bot: {{ bot.name }}</p>
+                </div>
+                <div>
+                    <a href="javascript:history.back()" class="btn btn-light me-2"><i class="bi bi-arrow-left"></i> Go Back</a>
+                    <a href="/" class="btn btn-outline-light"><i class="bi bi-house"></i> Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <div class="card shadow-sm max-w-lg mx-auto" style="max-width: 800px;">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Bot Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-bordered">
+                    <tbody>
+                        {% set all_fields = ['name','email','organization','messaging','created_at','updated_at','llm','description','is_active','id','file_folder','webhook_url','api_key','config','tags','user_id'] %}
+                        {% macro label(key) %}{{ key.replace('_',' ').title() }}{% endmacro %}
+                        {% if role == 'admin' %}
+                            {% for key in all_fields %}
+                            <tr>
+                                <th class="w-25 bg-light">{{ label(key) }}</th>
+                                <td>
+                                    {% if key == 'is_active' %}
+                                        {% if bot.get(key) == 1 or bot.get(key) == '1' or bot.get(key) == True %}true{% else %}false{% endif %}
+                                    {% else %}
+                                        {{ bot.get(key) or 'N/A' }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            {% set visible = ['name','email','organization','messaging','created_at','updated_at','llm','description','is_active'] %}
+                            {% for key in visible %}
+                            <tr>
+                                <th class="w-25 bg-light">{{ label(key) }}</th>
+                                <td>
+                                    {% if key == 'is_active' %}
+                                        {% if bot.get(key) == 1 or bot.get(key) == '1' or bot.get(key) == True %}true{% else %}false{% endif %}
+                                    {% else %}
+                                        {{ bot.get(key) or 'N/A' }}
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-white text-center py-3">
+                <a href="{{ url_for('bot_files', bot_id=bot.id) }}" class="btn btn-info me-2"><i class="bi bi-folder"></i> View Files</a>
+                <a href="{{ url_for('bot_usage', bot_id=bot.id) }}" class="btn btn-warning me-2"><i class="bi bi-graph-up"></i> Usage</a>
+                <a href="/" class="btn btn-primary"><i class="bi bi-house"></i> Back to Dashboard</a>
+            </div>
+        </div>
+    </div>
+    </div>
+    <!-- end .sidebar-content -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

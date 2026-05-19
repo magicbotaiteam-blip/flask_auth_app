@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="[^"]*">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Pricing - AI Magic Bot Transparent & Flexible Plans</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    
+</head>
+<body>
+    {% include '_navbar_public.html' %}
+    <!-- Navigation -->
+    
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container position-relative">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold mb-4">Simple, Transparent Pricing</h1>
+                    <p class="lead mb-4">Start with a free month, then pay only for what you use. No hidden fees, no surprises.</p>
+                    <div class="d-flex flex-wrap gap-3">
+                        <a href="#pricing-plans" class="btn btn-light btn-lg">
+                            <i class="bi bi-credit-card"></i> View Pricing Plans
+                        </a>
+                        <a href="/signup_local" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-rocket-takeoff"></i> Start Free Trial
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <i class="bi bi-cash-coin" style="font-size: 120px; opacity: 0.8;"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Plans -->
+    <section id="pricing-plans" class="py-5">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-10 mx-auto text-center">
+                    <h2 class="section-title">Choose Your Perfect Plan</h2>
+                    <p class="lead">Flexible pricing that grows with your needs. Start free, scale as you grow.</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- Free Trial Card -->
+                <div class="col-lg-4">
+                    <div class="pricing-card">
+                        <h3 class="fw-bold">Free Trial</h3>
+                        <p class="text-muted">Perfect for getting started</p>
+                        <div class="price-amount">$0</div>
+                        <p class="price-period">First month free</p>
+                        <a href="/signup_local" class="btn btn-outline-primary w-100 mb-4">Start Free Trial</a>
+                        
+                        <ul class="feature-list">
+                            <li><i class="bi bi-check-circle"></i> <strong>Full platform access</strong> for 30 days</li>
+                            <li><i class="bi bi-check-circle"></i> <strong>Earn a bonus month for every 3 successful customer introductions</strong></li>
+                            <li><i class="bi bi-check-circle"></i> Create up to 3 bots</li>
+                            <li><i class="bi bi-check-circle"></i> Basic AI models included</li>
+                            <li><i class="bi bi-check-circle"></i> No credit card required</li>
+                            <li><i class="bi bi-check-circle"></i> 24/7 support</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Basic Plan Card -->
+                <div class="col-lg-4">
+                    <div class="pricing-card popular">
+                        <div class="popular-badge">MOST POPULAR</div>
+                        <h3 class="fw-bold">Basic Plan</h3>
+                        <p class="text-muted">For growing businesses</p>
+                        <div class="price-amount">$5<span style="font-size: 24px;">*</span></div>
+                        <p class="price-period">per month + usage</p>
+                        <a href="/signup_local" class="btn btn-primary w-100 mb-4">Get Started</a>
+                        
+                        <ul class="feature-list">
+                            <li><i class="bi bi-check-circle"></i> <strong>Everything in Free Trial</strong></li>
+                            <li><i class="bi bi-check-circle"></i> Base fee: $5/month</li>
+                            <li><i class="bi bi-check-circle"></i> Usage-based additional charges</li>
+                            <li><i class="bi bi-check-circle"></i> Create unlimited bots</li>
+                            <li><i class="bi bi-check-circle"></i> Advanced AI models available</li>
+                            <li><i class="bi bi-check-circle"></i> Priority email support</li>
+                            <li><i class="bi bi-check-circle"></i> 24/7 support</li>
+                        </ul>
+                        
+                        <div class="info-box">
+                            <h6><i class="bi bi-info-circle"></i> Usage-Based Pricing:</h6>
+                            <p class="small mb-0">Additional charges apply for high-volume usage, premium AI models, and advanced features.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Enterprise Card -->
+                <div class="col-lg-4">
+                    <div class="pricing-card">
+                        <h3 class="fw-bold">Enterprise</h3>
+                        <p class="text-muted">For large organizations</p>
+                        <div class="price-amount">Custom</div>
+                        <p class="price-period">Tailored to your needs</p>
+                        <a href="#contact" class="btn btn-outline-primary w-100 mb-4">Contact Sales</a>
+                        
+                        <ul class="feature-list">
+                            <li><i class="bi bi-check-circle"></i> <strong>Everything in Basic Plan</strong></li>
+                            <li><i class="bi bi-check-circle"></i> Custom pricing based on usage</li>
+                            <li><i class="bi bi-check-circle"></i> Dedicated account manager</li>
+                            <li><i class="bi bi-check-circle"></i> SLA guarantee</li>
+                            <li><i class="bi bi-check-circle"></i> On-premise deployment options</li>
+                            <li><i class="bi bi-check-circle"></i> 24/7 support</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="row mt-4">
+                <div class="col-12 text-center">
+                    <p class="text-muted small">* Base monthly fee starts at $5 but may vary depending on usage patterns and selected features.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Details -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-10 mx-auto">
+                    <h2 class="section-title text-center">How Our Pricing Works</h2>
+                    <p class="lead text-center">Transparent, flexible pricing with no surprises</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="highlight-box">
+                        <h4><i class="bi bi-calendar-check"></i> 1. First Month Free</h4>
+                        <p>Start with a full-featured free trial. No credit card required. Experience everything OpenClaw AI has to offer for 30 days.</p>
+                        <ul class="feature-list">
+                            <li><i class="bi bi-check-circle"></i> Full platform access</li>
+                            <li><i class="bi bi-check-circle"></i> Create and test bots</li>
+                            <li><i class="bi bi-check-circle"></i> Invite team members</li>
+                            <li><i class="bi bi-check-circle"></i> Export your data anytime</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="highlight-box">
+                        <h4><i class="bi bi-currency-dollar"></i> 2. Flexible Monthly Pricing</h4>
+                        <p>After your free trial, pay a base fee of $5 per month. Additional charges apply only for what you actually use.</p>
+                        <div class="timeline mt-3">
+                            <div class="timeline-item">
+                                <h6>Base Monthly Fee: $5</h6>
+                                <p class="small">Covers platform access, basic features, and standard support</p>
+                            </div>
+                            <div class="timeline-item">
+                                <h6>Usage-Based Charges</h6>
+                                <p class="small">Additional costs for high message volume, premium features, and advanced AI models</p>
+                            </div>
+                            <div class="timeline-item">
+                                <h6>Volume Discounts</h6>
+                                <p class="small">Lower per-unit costs as your usage increases</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="success-box">
+                        <h4><i class="bi bi-cpu"></i> 3. AI Model Pricing</h4>
+                        <p>Choose from various AI models. Pricing depends on the model provider and the specific model you select.</p>
+                        
+                        <table class="comparison-table">
+                            <thead>
+                                <tr>
+                                    <th>AI Model Tier</th>
+                                    <th>Description</th>
+                                    <th>Pricing</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><strong>Basic Models</strong></td>
+                                    <td>Standard AI capabilities for common tasks</td>
+                                    <td>Included in base fee</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Advanced Models</strong></td>
+                                    <td>Enhanced performance for complex tasks</td>
+                                    <td>$0.001 - $0.01 per message</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Premium Models</strong></td>
+                                    <td>State-of-the-art models from leading providers</td>
+                                    <td>$0.01 - $0.05 per message</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Custom Models</strong></td>
+                                    <td>Fine-tuned models for specific use cases</td>
+                                    <td>Custom pricing</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <p class="small mt-3">Note: Model pricing varies by provider (OpenAI, Anthropic, Google, etc.) and specific model selection.</p>
+                    </div>
+                </div>
+                
+                <div class="col-lg-6">
+                    <div class="info-box">
+                        <h4><i class="bi bi-envelope-paper"></i> 4. Monthly Usage Reports</h4>
+                        <p>Receive detailed monthly usage reports via email. Always know what you're paying for.</p>
+                        
+                        <div class="timeline mt-3">
+                            <div class="timeline-item">
+                                <h6>Monthly Invoice</h6>
+                                <p class="small">Detailed breakdown of all charges</p>
+                            </div>
+                            <div class="timeline-item">
+                                <h6>Usage Analytics</h6>
+                                <p class="small">Bot performance, message volume, and cost analysis</p>
+                            </div>
+                            <div class="timeline-item">
+                                <h6>Cost Projections</h6>
+                                <p class="small">Forecast next month's costs based on current usage</p>
+                            </div>
+                            <div class="timeline-item">
+                                <h6>Optimization Tips</h6>
+                                <p class="small">Suggestions to optimize costs and improve efficiency</p>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <h6><i class="bi bi-shield-check"></i> Billing Transparency:</h6>
+                            <p class="small mb-0">All charges are clearly itemized. No hidden fees, no surprises.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Cost Calculator -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="section-title">Estimate Your Monthly Cost</h2>
+                    <p class="lead">See how our flexible pricing works for your specific needs</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Monthly Messages</label>
+                                    <input type="range" class="form-range" min="1000" max="100000" step="1000" value="10000" id="messageRange">
+                                    <div class="d-flex justify-content-between">
+                                        <small>1,000</small>
+                                        <small id="messageValue">10,000</small>
+                                        <small>100,000</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">AI Model Tier</label>
+                                    <select class="form-select" id="modelTier">
+                                        <option value="basic">Basic (included)</option>
+                                        <option value="advanced" selected>Advanced ($0.005/message)</option>
+                                        <option value="premium">Premium ($0.02/message)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h5 class="mb-1">Estimated Monthly Cost</h5>
+                                                <p class="mb-0" id="costBreakdown">Base fee: $5 + Usage: $0 = <strong>$5 total</strong></p>
+                                            </div>
+                                            <div class="text-end">
+                                                <h3 id="totalCost">$5</h3>
+                                                <small class="text-muted">per month</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <p class="text-muted small">This is an estimate. Actual costs may vary based on actual usage and selected features.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-10 mx-auto text-center">
+                    <h2 class="section-title">Frequently Asked Questions</h2>
+                    <p class="lead">Get answers to common questions about our pricing</p>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-lg-8 mx-auto">
+                    <div class="faq-item">
+                        <div class="faq-question" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            <span>Is the first month really free?</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer collapse show" id="faq1">
+                            <p>Yes! You get full access to all platform features for 30 days with no credit card required. Create bots, invite team members, and test everything before you decide to continue.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            <span>What does the $5 monthly base fee include?</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer collapse" id="faq2">
+                            <p>The $5 base monthly fee includes:</p>
+                            <ul>
+                                <li>Platform access and basic features</li>
+                                <li>Standard AI models</li>
+                                <li>Email support</li>
+                                <li>Basic analytics and reporting</li>
+                                <li>Up to 3 team members</li>
+                            </ul>
+                            <p>Additional charges apply for high-volume usage, premium AI models, and advanced features.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            <span>How are AI model costs calculated?</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer collapse" id="faq3">
+                            <p>AI model costs depend on two factors:</p>
+                            <ol>
+                                <li><strong>Model Provider:</strong> Different providers (OpenAI, Anthropic, Google, etc.) have different pricing</li>
+                                <li><strong>Model Type:</strong> Basic models are included, while advanced and premium models have per-message costs</li>
+                            </ol>
+                            <p>You can mix and match models for different bots to optimize costs.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            <span>When will I receive my monthly usage report?</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer collapse" id="faq4">
+                            <p>Detailed monthly usage reports are emailed within 3 business days after your billing cycle ends. Each report includes:</p>
+                            <ul>
+                                <li>Itemized invoice with all charges</li>
+                                <li>Usage breakdown by bot and feature</li>
+                                <li>Cost projections for the next month</li>
+                                <li>Optimization tips to reduce costs</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="faq-item">
+                        <div class="faq-question" data-bs-toggle="collapse" data-bs-target="#faq5">
+                            <span>Can I cancel anytime?</span>
+                            <i class="bi bi-chevron-down"></i>
+                        </div>
+                        <div class="faq-answer collapse" id="faq5">
+                            <p>Yes! You can cancel your subscription at any time. There are no long-term contracts or cancellation fees. When you cancel, you can continue using the service until the end of your current billing period.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h2 class="mb-3">Ready to Get Started?</h2>
+                    <p class="lead mb-0">Join thousands of businesses using OpenClaw AI to automate their workflows.</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a href="/signup_local" class="btn btn-light btn-lg">
+                        <i class="bi bi-rocket-takeoff"></i> Start Your Free Month
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-robot"></i> OpenClaw AI</h5>
+                    <p class="text-muted">Transparent, flexible pricing for AI-powered automation.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <h5>Quick Links</h5>
+                    <ul class="list-unstyled">
+                        <li><a href="/features/openclaw" class="text-muted text-decoration-none">OpenClaw Features</a></li>
+                        <li><a href="/features/how-to-start" class="text-muted text-decoration-none">How to Get Started</a></li>
+                        <li><a href="/pricing" class="text-muted text-decoration-none">Pricing</a></li>
+                        <li><a href="/signup_local" class="text-muted text-decoration-none">Sign Up</a></li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="bg-secondary">
+            <div class="row">
+                <div class="col-12 text-center">
+                    <p class="text-muted mb-0">&copy; 2025 OpenClaw AI. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Cost Calculator
+        const messageRange = document.getElementById('messageRange');
+        const messageValue = document.getElementById('messageValue');
+        const modelTier = document.getElementById('modelTier');
+        const costBreakdown = document.getElementById('costBreakdown');
+        const totalCost = document.getElementById('totalCost');
+        
+        const modelPrices = {
+            basic: 0,
+            advanced: 0.005,
+            premium: 0.02
+        };
+        
+        function updateCost() {
+            const messages = parseInt(messageRange.value);
+            const model = modelTier.value;
+            const modelPrice = modelPrices[model];
+            
+            // Calculate usage cost
+            const usageCost = messages * modelPrice;
+            const baseFee = 5;
+            const total = baseFee + usageCost;
+            
+            // Update display
+            messageValue.textContent = messages.toLocaleString();
+            costBreakdown.innerHTML = `Base fee: $${baseFee} + Usage: $${usageCost.toFixed(2)} = <strong>$${total.toFixed(2)} total</strong>`;
+            totalCost.textContent = `$${total.toFixed(2)}`;
+        }
+        
+        messageRange.addEventListener('input', updateCost);
+        modelTier.addEventListener('change', updateCost);
+        
+        // Initialize calculator
+        updateCost();
+        
+        // FAQ toggle
+        document.querySelectorAll('.faq-question').forEach(question => {
+            question.addEventListener('click', function() {
+                const icon = this.querySelector('i');
+                if (icon.classList.contains('bi-chevron-down')) {
+                    icon.classList.remove('bi-chevron-down');
+                    icon.classList.add('bi-chevron-up');
+                } else {
+                    icon.classList.remove('bi-chevron-up');
+                    icon.classList.add('bi-chevron-down');
+                }
+            });
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    window.scrollTo({
+                        top: targetElement.offsetTop - 80,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

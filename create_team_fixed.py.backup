@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+"""
+Create a fixed version of the create_team function
+"""
+
+fixed_function = '''
+    @app.route("/teams/create", methods=["GET", "POST"])
+    @login_required
+    def create_team():
+        """Create a new team"""
+        if request.method == "POST":
+            name = request.form.get("name", "").strip()
+            description = request.form.get("description", "").strip()
+            
+            if not name:
+                flash("Team name is required.", "error")
+                return render_template("create_team.html", username=session.get("username"))
+            
+            user_id = session["user_id"]
+            
+            # Check if team name already exists for this user
+            conn = get_db_connection()
+            existing = conn.execute("""
+                SELECT * FROM teams WHERE name = ? AND created_by = ?
+            """, (name, user_id)).fetchone()
+            conn.close()
+            
+            if existing:
+                flash("You already have a team with this name.", "error")
+                return render_template("create_team.html", username=session.get("username"))
+            
+            # Create team with transaction
+            conn = None
+            try:
+                conn = get_db_connection()
+                
+                # Start explicit transaction
+                conn.execute("BEGIN IMMEDIATE")
+                
+                # Execute INSERT and capture the cursor
+                cursor = conn.execute("""
+                    INSERT INTO teams (name, description, created_by, settings)
+                    VALUES (?, ?, ?, ?)
+                """, (name, description, user_id, json.dumps({
+                    "allow_public_invites": False,
+                    "default_role": "member",
+                    "bot_sharing": True,
+                    "message_history": 90  # days
+                })))
+                
+                # Get the last insert ID from the cursor
+                team_id = cursor.lastrowid
+                
+                # Add creator as owner
+                conn.execute("""
+                    INSERT INTO team_members (team_id, user_id, role, invited_by)
+                    VALUES (?, ?, ?, ?)
+                """, (team_id, user_id, 'owner', user_id))
+                
+                # Commit transaction
+                conn.commit()
+                conn.close()
+                conn = None
+                
+                # Log activity (with a new connection to avoid locks)
+                try:
+                    log_team_activity(team_id, user_id, 'team_created', {
+                        'team_name': name,
+                        'description': description
+                    }, request)
+                except Exception as log_error:
+                    print(f"Warning: Failed to log activity: {log_error}")
+                    # Don't fail team creation if logging fails
+                
+                flash(f"Team '{name}' created successfully!", "success")
+                return redirect(url_for("team_dashboard", team_id=team_id))
+                
+            except Exception as e:
+                # Clean up connection
+                if conn:
+                    try:
+                        conn.rollback()
+                        conn.close()
+                    except:
+                        pass
+                
+                flash(f"Error creating team: {e}", "error")
+                return render_template("create_team.html", username=session.get("username"))
+        
+        # GET request - show form
+        return render_template("create_team.html", username=session.get("username"))
+'''
+
+print("Fixed create_team function:")
+print(fixed_function)

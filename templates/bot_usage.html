@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Usage - AI Magic Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        @media (max-width: 576px) {
+            .page-header .d-flex.justify-content-between {
+                flex-direction: column;
+                gap: 12px;
+            }
+        }
+
+        .usage-summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .usage-card {
+            background: var(--card-bg, #fff);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+        .usage-card .label {
+            font-size: 0.8rem;
+            color: #64748b;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .usage-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .usage-card .sub {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
+        .time-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .time-tab {
+            background: var(--card-bg, #f8fafc);
+            border: 1px solid var(--border-color, #e2e8f0);
+            border-radius: 8px;
+            padding: 0.4rem 1rem;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+        .time-tab.active {
+            background: #7c3aed;
+            border-color: #7c3aed;
+            color: #fff;
+        }
+
+        .chart-container {
+            height: 200px;
+            margin: 1.5rem 0;
+        }
+
+        .detail-table th {
+            width: 35%;
+            background: #f8fafc;
+        }
+        .no-data {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+        .no-data .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="sidebar-layout">
+    {% with active_page='my_bots' %}
+    {% include '_sidebar.html' %}
+    {% endwith %}
+    
+    <div class="sidebar-content">
+    <div class="page-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-graph-up"></i> Bot Usage</h2>
+                    <p class="lead mb-0">Usage statistics for <strong>{{ bot.name }}</strong></p>
+                </div>
+                <div>
+                    <a href="{{ url_for('bot_detail', bot_id=bot.id) }}" class="btn btn-light me-2"><i class="bi bi-arrow-left"></i> Back to Bot</a>
+                    <a href="/" class="btn btn-outline-light"><i class="bi bi-house"></i> Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        {% if no_agent %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="no-data">
+                    <div class="icon">🤖</div>
+                    <h4>No Agent Found</h4>
+                    <p>No OpenClaw agent named <code>{{ agent_name }}</code> was found. Make sure the agent is running and has been used.</p>
+                    <a href="{{ url_for('bot_detail', bot_id=bot.id) }}" class="btn btn-primary mt-3"><i class="bi bi-arrow-left"></i> Go Back</a>
+                </div>
+            </div>
+        </div>
+        {% elif no_data %}
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="no-data">
+                    <div class="icon">📊</div>
+                    <h4>No Usage Data Yet</h4>
+                    <p>The agent <code>{{ agent_name }}</code> is registered but has no recorded usage data.</p>
+                    <a href="{{ url_for('bot_detail', bot_id=bot.id) }}" class="btn btn-primary mt-3"><i class="bi bi-arrow-left"></i> Go Back</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <!-- Summary Cards -->
+        <div class="usage-summary-cards">
+            <div class="usage-card">
+                <div class="label">Total Tokens</div>
+                <div class="value" id="totalTokens">{{ "%.1fM"|format(total_tokens / 1000000) if total_tokens >= 1000000 else "%.1fK"|format(total_tokens / 1000) if total_tokens >= 1000 else total_tokens }}</div>
+                <div class="sub">{{ "%.1fM input"|format(total_input / 1000000) if total_input >= 1000000 else "%.1fK input"|format(total_input / 1000) if total_input >= 1000 else total_input }} / {{ "%.1fM output"|format(total_output / 1000000) if total_output >= 1000000 else "%.1fK output"|format(total_output / 1000) if total_output >= 1000 else total_output }}</div>
+            </div>
+            <div class="usage-card">
+                <div class="label">Model Calls</div>
+                <div class="value">{{ total_calls }}</div>
+                <div class="sub">{{ total_days_active }} days active</div>
+            </div>
+            <div class="usage-card">
+                <div class="label">Total Runs</div>
+                <div class="value">{{ total_runs }}</div>
+                <div class="sub">{{ "Since" if first_seen }} {{ first_seen[:10] }}</div>
+            </div>
+        </div>
+
+        <!-- Time Period Tabs -->
+        <div class="card shadow-sm">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-calendar"></i> Usage Over Time</h5>
+                <div class="time-tabs" id="timeTabs">
+                    <span class="time-tab active" data-days="30">Last 30 Days</span>
+                    <span class="time-tab" data-days="7">Last 7 Days</span>
+                    <span class="time-tab" data-days="1">Today</span>
+                    <span class="time-tab" data-days="0">All Time</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="usageChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Daily Breakdown -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0"><i class="bi bi-list-ul"></i> Daily Breakdown</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-bordered mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Date</th>
+                                <th>Calls</th>
+                                <th>Tokens</th>
+                                <th>Input</th>
+                                <th>Output</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dailyTableBody">
+                            {% for day in daily_data %}
+                            <tr>
+                                <td>{{ day.date }}</td>
+                                <td>{{ day.calls }}</td>
+                                <td>{{ "%d"|format(day.tokens) }}</td>
+                                <td>{{ "%d"|format(day.input or 0) }}</td>
+                                <td>{{ "%d"|format(day.output or 0) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    </div>
+    <!-- end .sidebar-content -->
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% if not no_agent and not no_data %}
+    <script>
+        // Usage data for chart
+        const agentUsageData = {{ chart_data | safe }};
+        let usageChart = null;
+
+        function filterByDays(data, days) {
+            if (days === 0) return data;
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - days);
+            return data.filter(d => new Date(d.date) >= cutoff);
+        }
+
+        function renderChart(days) {
+            const filtered = filterByDays(agentUsageData, days);
+            const labels = filtered.map(d => d.date.substring(5));
+            const tokens = filtered.map(d => d.tokens);
+            const calls = filtered.map(d => d.calls);
+
+            const ctx = document.getElementById('usageChart').getContext('2d');
+            if (usageChart) usageChart.destroy();
+
+            usageChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Tokens',
+                            data: tokens,
+                            backgroundColor: 'rgba(124, 58, 237, 0.7)',
+                            borderColor: '#7c3aed',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            yAxisID: 'y',
+                        },
+                        {
+                            label: 'Calls',
+                            data: calls,
+                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                            borderColor: '#3b82f6',
+                            borderWidth: 1,
+                            borderRadius: 4,
+                            yAxisID: 'y1',
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: { boxWidth: 12, padding: 12 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            ticks: { maxTicksLimit: 15 }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            position: 'left',
+                            title: { display: true, text: 'Tokens' },
+                            ticks: {
+                                callback: function(value) {
+                                    if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M';
+                                    if (value >= 1000) return (value / 1000).toFixed(1) + 'K';
+                                    return value;
+                                }
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            title: { display: true, text: 'Calls' },
+                            grid: { display: false },
+                            ticks: {
+                                stepSize: 1,
+                                callback: function(value) {
+                                    if (Number.isInteger(value)) return value;
+                                    return '';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Update daily table
+            const tbody = document.getElementById('dailyTableBody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data for this period</td></tr>';
+            } else {
+                tbody.innerHTML = filtered.map(d => `
+                    <tr>
+                        <td>${d.date}</td>
+                        <td>${d.calls}</td>
+                        <td>${d.tokens.toLocaleString()}</td>
+                        <td>${(d.input || 0).toLocaleString()}</td>
+                        <td>${(d.output || 0).toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            }
+        }
+
+        document.getElementById('timeTabs').addEventListener('click', function(e) {
+            const tab = e.target.closest('.time-tab');
+            if (!tab) return;
+            document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            renderChart(parseInt(tab.dataset.days));
+        });
+
+        renderChart(30);
+    </script>
+    {% endif %}
+</body>
+</html>

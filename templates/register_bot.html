@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if bot %}Edit Bot: {{ bot.name }}{% else %}Create New Bot{% endif %} - AI Magic Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* Additional styles for bot form */
+        .form-section {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+        
+        .form-section h5 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--primary-color);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .required-field::after {
+            content: " *";
+            color: #dc3545;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(124, 58, 237, 0.25);
+        }
+        
+        .btn-action-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .btn-action-group {
+                flex-direction: column;
+            }
+            
+            .btn-action-group .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% with active_page='my_bots' %}
+    {% include '_navbar.html' %}
+    {% endwith %}
+    
+    <!-- Page Header (consistent with bot_detail.html) -->
+    <div class="page-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-robot"></i> {% if bot %}Edit Bot: {{ bot.name }}{% else %}Create New Bot{% endif %}</h2>
+                    <p class="lead mb-0">
+                        {% if bot %}
+                            Update your bot's information
+                        {% else %}
+                            Register a new AI-powered bot
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="btn-action-group">
+                    <a href="{{ url_for('my_bots') }}" class="btn btn-light">
+                        <i class="bi bi-arrow-left"></i> Back to Bots
+                    </a>
+                    {% if bot %}
+                    <a href="{{ url_for('bot_detail', bot_id=bot.id) }}" class="btn btn-outline-light">
+                        <i class="bi bi-eye"></i> View Details
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        
+        <!-- Main Form Card (consistent with bot_detail.html card) -->
+        <div class="card shadow-sm max-w-lg mx-auto" style="max-width: 800px;">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">
+                    <i class="bi bi-{% if bot %}pencil-square{% else %}plus-circle{% endif %}"></i>
+                    {% if bot %}Edit Bot Information{% else %}Bot Registration Form{% endif %}
+                </h5>
+            </div>
+            
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('save_bot') }}" id="botForm">
+                    {% if bot %}
+                        <input type="hidden" name="bot_id" value="{{ bot.id }}">
+                    {% endif %}
+                    
+                    <!-- Basic Information Section -->
+                    <div class="form-section">
+                        <h5><i class="bi bi-info-circle"></i> Basic Information</h5>
+                        
+                        <!-- Bot Name -->
+                        <div class="mb-3">
+                            <label for="bot-name" class="form-label required-field">Bot Name</label>
+                            <input type="text" class="form-control" id="bot-name" name="name" 
+                                   value="{{ bot.name if bot else '' }}" 
+                                   placeholder="Enter bot name" required>
+                            <div class="form-text">The suffix <code>_magicAIbot</code> will be automatically appended to your bot name</div>
+                        </div>
+                        
+                        <!-- Email -->
+                        <div class="mb-3">
+                            <label for="bot-email" class="form-label required-field">Email Address</label>
+                            <input type="email" class="form-control" id="bot-email" name="email"
+                                   value="{{ bot.email if bot else '' }}" 
+                                   placeholder="bot@example.com" required>
+                            <div class="form-text">Contact email for notifications</div>
+                        </div>
+                        
+                        <!-- Organization -->
+                        <div class="mb-3">
+                            <label for="bot-org" class="form-label">Organization</label>
+                            <input type="text" class="form-control" id="bot-org" name="organization"
+                                   value="{{ bot.organization if bot else '' }}" 
+                                   placeholder="Your company or team">
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="mb-3">
+                            <label for="bot-description" class="form-label">Description</label>
+                            <textarea class="form-control" id="bot-description" name="description" 
+                                      rows="3" placeholder="Describe what this bot does">{{ bot.description if bot else '' }}</textarea>
+                        </div>
+                    </div>
+                    
+                    <!-- Platform Configuration Section -->
+                    <div class="form-section">
+                        <h5><i class="bi bi-gear"></i> Platform Configuration</h5>
+                        
+                        <!-- Messaging Platform -->
+                        <div class="mb-3">
+                            <label for="bot-messaging" class="form-label required-field">Messaging Platform</label>
+                            <select class="form-select" id="bot-messaging" name="messaging" required>
+                                <option value="">Select a platform</option>
+                                <option value="Slack" {% if bot and bot.messaging == 'Slack' %}selected{% endif %}>Slack</option>
+                                <option value="Telegram" {% if bot and bot.messaging == 'Telegram' %}selected{% endif %}>Telegram</option>
+                                <option value="WhatsApp" {% if bot and bot.messaging == 'WhatsApp' %}selected{% endif %}>WhatsApp</option>
+                                <option value="Discord" {% if bot and bot.messaging == 'Discord' %}selected{% endif %}>Discord</option>
+                                <option value="Microsoft Teams" {% if bot and bot.messaging == 'Microsoft Teams' %}selected{% endif %}>Microsoft Teams</option>
+                                <option value="Multiple" {% if bot and bot.messaging == 'Multiple' %}selected{% endif %}>Multiple Platforms</option>
+                            </select>
+                            <div class="form-text">Primary messaging platform for this bot</div>
+                        </div>
+                        
+
+                        
+                        <!-- Bot Token (Admin only) -->
+                        {% if role == 'admin' %}
+                        <div class="mb-3">
+                            <label for="bot-token" class="form-label">Bot Token ID</label>
+                            <input type="text" class="form-control" id="bot-token" name="token"
+                                   value="{{ bot.token if bot else '' }}" 
+                                   placeholder="Enter unique bot token">
+                            <div class="form-text">Unique identifier for your bot</div>
+                        </div>
+                        {% else %}
+                            <!-- For non-admin users, generate token automatically -->
+                            <input type="hidden" name="token" value="{{ bot.token if bot else 'bot_' + range(1, 1000000)|random|string }}">
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Advanced Settings (Collapsible) -->
+                    <div class="form-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0"><i class="bi bi-sliders"></i> Advanced Settings</h5>
+                            <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#advancedSettings">
+                                <i class="bi bi-chevron-down"></i> Toggle
+                            </button>
+                        </div>
+                        
+                        <div class="collapse" id="advancedSettings">
+                            <!-- AI Model (LLM) - Admin only -->
+                            {% if role == 'admin' %}
+                            <div class="mb-3">
+                                <label for="bot-llm" class="form-label">AI Model (LLM)</label>
+                                <select class="form-select" id="bot-llm" name="llm">
+                                    <option value="">Select AI model</option>
+                                    <option value="Deepseek" {% if bot and bot.llm == 'Deepseek' %}selected{% endif %}>Deepseek (Default)</option>
+                                    <option value="GPT-4" {% if bot and bot.llm == 'GPT-4' %}selected{% endif %}>GPT-4</option>
+                                    <option value="GPT-3.5" {% if bot and bot.llm == 'GPT-3.5' %}selected{% endif %}>GPT-3.5 Turbo</option>
+                                    <option value="Claude" {% if bot and bot.llm == 'Claude' %}selected{% endif %}>Claude</option>
+                                    <option value="Gemini" {% if bot and bot.llm == 'Gemini' %}selected{% endif %}>Gemini</option>
+                                    <option value="Llama" {% if bot and bot.llm == 'Llama' %}selected{% endif %}>Llama</option>
+                                    <option value="Mistral" {% if bot and bot.llm == 'Mistral' %}selected{% endif %}>Mistral</option>
+                                </select>
+                            </div>
+                            {% endif %}
+                            
+                            <!-- Webhook URL -->
+                            <div class="mb-3">
+                                <label for="bot-webhook" class="form-label">Webhook URL</label>
+                                <input type="url" class="form-control" id="bot-webhook" name="webhook_url"
+                                       value="{{ bot.webhook_url if bot else '' }}" 
+                                       placeholder="https://example.com/webhook">
+                            </div>
+                            
+                            <!-- API Key -->
+                            <div class="mb-3">
+                                <label for="bot-apikey" class="form-label">API Key</label>
+                                <input type="password" class="form-control" id="bot-apikey" name="api_key"
+                                       value="{{ bot.api_key if bot else '' }}" 
+                                       placeholder="Enter API key">
+                            </div>
+                            
+                            <!-- Tags -->
+                            <div class="mb-3">
+                                <label for="bot-tags" class="form-label">Tags</label>
+                                <input type="text" class="form-control" id="bot-tags" name="tags"
+                                       value="{{ bot.tags if bot else '' }}" 
+                                       placeholder="support, sales, chatbot (comma separated)">
+                                <div class="form-text">Use tags to categorize your bot</div>
+                            </div>
+                            
+                            {% if role == 'admin' %}
+                            <!-- File Folder (Admin Only) -->
+                            <div class="mb-3">
+                                <label for="bot-file-folder" class="form-label">File Folder</label>
+                                <input type="text" class="form-control" id="bot-file-folder" name="file_folder"
+                                       value="{{ bot.file_folder if bot else '' }}" 
+                                       placeholder="/Users/siyang/Documents/openclawUsers/{{ username }}/{{ '' if not bot else bot.name }}">
+                                <div class="form-text">Directory path where this bot's generated files will be stored</div>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="d-flex justify-content-between align-items-center pt-3 border-top">
+                        <div>
+                            {% if bot %}
+                            <a href="{{ url_for('delete_bot', bot_id=bot.id) }}" 
+                               class="btn btn-outline-danger" 
+                               onclick="return confirm('Are you sure you want to delete this bot? This action cannot be undone.')">
+                                <i class="bi bi-trash"></i> Delete Bot
+                            </a>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="btn-action-group">
+                            <a href="{{ url_for('my_bots') }}" class="btn btn-outline-secondary">
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-{% if bot %}check-circle{% else %}plus-circle{% endif %}"></i>
+                                {% if bot %}Update Bot{% else %}Create Bot{% endif %}
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card-footer bg-light">
+                <small class="text-muted">
+                    <i class="bi bi-info-circle"></i>
+                    Fields marked with * are required. 
+                    {% if not bot %}
+                    Your bot will be available immediately after creation.
+                    {% endif %}
+                </small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Form Validation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('botForm');
+            
+            // Bot name suffix helper
+            function ensureBotSuffix(name) {
+                const suffix = '_magicAIbot';
+                return name.endsWith(suffix) ? name : name + suffix;
+            }
+            
+            // Form validation
+            form.addEventListener('submit', function(event) {
+                // Append suffix to bot name before validation
+                const nameInput = document.getElementById('bot-name');
+                if (nameInput && nameInput.value.trim()) {
+                    nameInput.value = ensureBotSuffix(nameInput.value.trim());
+                }
+                
+                let isValid = true;
+                const requiredFields = form.querySelectorAll('[required]');
+                
+                requiredFields.forEach(field => {
+                    if (!field.value.trim()) {
+                        isValid = false;
+                        field.classList.add('is-invalid');
+                        
+                        // Add error message if not exists
+                        if (!field.nextElementSibling || !field.nextElementSibling.classList.contains('invalid-feedback')) {
+                            const errorDiv = document.createElement('div');
+                            errorDiv.className = 'invalid-feedback';
+                            errorDiv.textContent = 'This field is required';
+                            field.parentNode.appendChild(errorDiv);
+                        }
+                    } else {
+                        field.classList.remove('is-invalid');
+                        field.classList.add('is-valid');
+                    }
+                });
+                
+                if (!isValid) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                }
+            });
+            
+            // Clear validation on input
+            form.querySelectorAll('input, select, textarea').forEach(field => {
+                field.addEventListener('input', function() {
+                    this.classList.remove('is-invalid', 'is-valid');
+                    const errorMsg = this.nextElementSibling;
+                    if (errorMsg && errorMsg.classList.contains('invalid-feedback')) {
+                        errorMsg.remove();
+                    }
+                });
+            });
+            
+            // Auto-format tags
+            const tagsInput = document.getElementById('bot-tags');
+            if (tagsInput) {
+                tagsInput.addEventListener('blur', function() {
+                    const tags = this.value.split(',')
+                        .map(tag => tag.trim())
+                        .filter(tag => tag.length > 0)
+                        .join(', ');
+                    this.value = tags;
+                });
+            }
+            
+            // Bot name duplicate check (AJAX, debounced)
+            const nameInput = document.getElementById('bot-name');
+            if (nameInput) {
+                let nameCheckTimer;
+                const nameFeedback = document.createElement('div');
+                nameFeedback.className = 'invalid-feedback';
+                nameInput.parentNode.appendChild(nameFeedback);
+                
+                nameInput.addEventListener('input', function() {
+                    clearTimeout(nameCheckTimer);
+                    const raw = this.value.trim();
+                    if (raw.length < 2) return;
+                    // Check with the suffix appended (matches what will be saved)
+                    const name = raw.endsWith('_magicAIbot') ? raw : raw + '_magicAIbot';
+                    
+                    nameCheckTimer = setTimeout(function() {
+                        fetch('/check-bot-name?name=' + encodeURIComponent(name) + '&exclude={{ bot.id if bot else "" }}')
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.exists) {
+                                    nameInput.classList.add('is-invalid');
+                                    nameFeedback.textContent = 'A bot with this name already exists';
+                                } else {
+                                    nameInput.classList.remove('is-invalid');
+                                    nameFeedback.textContent = '';
+                                }
+                            })
+                            .catch(() => {});
+                    }, 500);
+                });
+            }
+            
+            // Debug: Log bot data if available
+            {% if bot %}
+            console.log('Bot data for editing:', {{ bot|tojson|safe }});
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

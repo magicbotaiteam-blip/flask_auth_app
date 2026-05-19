@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="[^"]*">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Application Features - Bots Management & Group Management Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    
+</head>
+<body>
+    {% include '_navbar_public.html' %}
+    <!-- Navigation -->
+    
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7">
+                    <h1 class="display-4 fw-bold mb-4">Application Features</h1>
+                    <p class="lead mb-4">A comprehensive bot and group management platform with powerful AI integration, collaboration tools, and beautiful UI.</p>
+                    <div class="d-flex gap-3">
+                        <a href="/signup_local" class="btn btn-light btn-lg">
+                            <i class="bi bi-rocket-takeoff"></i> TRy It Free
+                        </a>
+                        <a href="#core-features" class="btn btn-outline-light btn-lg">
+                            <i class="bi bi-list-check"></i> Explore Features
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <img src="{{ url_for('static', filename='Magic_Bot_AI.jpg') }}" class="img-fluid rounded shadow" alt="AI Magic Bot Platform">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Overview -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-10 mx-auto text-center">
+                    <h2 class="section-title">Complete Bots Management & Collaboration Platform</h2>
+                    <p class="lead">Everything you need for AI-powered bot managements and team collaboration.</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <div class="col-md-3 text-center">
+                    <div class="display-6 fw-bold text-primary">100%</div>
+                    <p class="text-muted">Open Source</p>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="display-6 fw-bold text-primary">AI-Powered</div>
+                    <p class="text-muted">Bots Management</p>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="display-6 fw-bold text-primary">Unlimited</div>
+                    <p class="text-muted">Groups & Members</p>
+                </div>
+                <div class="col-md-3 text-center">
+                    <div class="display-6 fw-bold text-primary">24/7</div>
+                    <p class="text-muted">Uptime Monitoring</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bots Creation & Management Features -->
+    <section id="bots" class="py-5">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="section-title">Bots Creation & Management</h2>
+                    <p class="lead">Create, configure, and manage AI-powered bots across multiple platforms with intuitive tools</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- Bots Management -->
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper feature-icon-bot-creation">
+                            <i class="bi bi-plus-circle"></i>
+                        </div>
+                        <h4>Easy Bots Management</h4>
+                        <p class="text-muted">Create new bots in minutes with intuitive forms, AI model selection, and platform configuration.</p>
+                        
+                        <ul class="feature-list mt-4">
+                            <li><i class="bi bi-check-circle"></i> Step-by-step bot setup wizard</li>
+                            <li><i class="bi bi-check-circle"></i> Multiple AI model support (GPT-4, Claude, Gemini)</li>
+                            <li><i class="bi bi-check-circle"></i> Platform selection (Telegram, Discord, Slack)</li>
+                            <li><i class="bi bi-check-circle"></i> Template-based creation</li>
+                            <li><i class="bi bi-check-circle"></i> Quick configuration presets</li>
+                        </ul>
+                        
+                        <div class="mt-4">
+                            <span class="tech-badge">Wizard UI</span>
+                            <span class="tech-badge">AI Models</span>
+                            <span class="tech-badge">Templates</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- Bots Management -->
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper feature-icon-bot-management">
+                            <i class="bi bi-list-task"></i>
+                        </div>
+                        <h4>Bots Management Dashboard</h4>
+                        <p class="text-muted">Monitor and manage all your bots from a centralized dashboard with real-time status and controls.</p>
+                        
+                        <ul class="feature-list mt-4">
+                            <li><i class="bi bi-check-circle"></i> Centralized bot listing</li>
+                            <li><i class="bi bi-check-circle"></i> Real-time status monitoring</li>
+                            <li><i class="bi bi-check-circle"></i> Start/stop/restart controls</li>
+                            <li><i class="bi bi-check-circle"></i> Usage statistics & analytics</li>
+                            <li><i class="bi bi-check-circle"></i> Bulk operations</li>
+                        </ul>
+                        
+                        <div class="mt-4">
+                            <span class="tech-badge">Dashboard</span>
+                            <span class="tech-badge">Monitoring</span>
+                            <span class="tech-badge">Analytics</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Group Management -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="row mb-5">
+                <div class="col-lg-8 mx-auto text-center">
+                    <h2 class="section-title">Group Collaboration</h2>
+                    <p class="lead">Powerful tools for team collaboration and project management</p>
+                </div>
+            </div>
+            
+            <div class="row g-4">
+                <!-- Group Features -->
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper feature-icon-group">
+                            <i class="bi bi-people-fill"></i>
+                        </div>
+                        <h4>Group Management</h4>
+                        <p class="text-muted">Create, manage, and collaborate in groups with role-based permissions and member management.</p>
+                        
+                        <ul class="feature-list mt-4">
+                            <li><i class="bi bi-check-circle"></i> Create unlimited groups</li>
+                            <li><i class="bi bi-check-circle"></i> Role-based permissions (Admin, Member, Guest)</li>
+                            <li><i class="bi bi-check-circle"></i> Member invitation system</li>
+                            <li><i class="bi bi-check-circle"></i> Group activity logs</li>
+                            <li><i class="bi bi-check-circle"></i> Bulk member management</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Invitation System -->
+                <div class="col-md-6">
+                    <div class="feature-card">
+                        <div class="feature-icon-wrapper feature-icon-group">
+                            <i class="bi bi-envelope-plus"></i>
+                        </div>
+                        <h4>Smart Invitation System</h4>
+                        <p class="text-muted">Invite users via email with automatic account creation and seamless onboarding.</p>
+                        
+                        <ul class="feature-list mt-4">
+                            <li><i class="bi bi-check-circle"></i> Email invitations with tokens</li>
+                            <li><i class="bi bi-check-circle"></i> Automatic account creation</li>
+                            <li><i class="bi bi-check-circle"></i> Role assignment on join</li>
+                            <li><i class="bi bi-check-circle"></i> Invitation expiration (7 days)</li>
+                            <li><i class="bi bi-check-circle"></i> Resend & revoke invitations</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); color: white;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h2 class="mb-3">Ready to Try AI Magic Bot?</h2>
+                    <p class="lead mb-0">Experience AI-powered bot creation and powerful group collaboration.</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a href="/signup_local" class="btn btn-light btn-lg">
+                        <i class="bi bi-rocket-takeoff"></i> Get Started Free
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-robot"></i> AI Magic Bot</h5>
+                    <p class="text-muted">AI-powered bot creation and group collaboration platform.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="text-muted mb-0">&copy; 2025 AI Magic Bot. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Initialize dropdowns
+        document.addEventListener('DOMContentLoaded', function() {
+            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'))
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl)
+            })
+        });
+    </script>
+</body>
+</html>

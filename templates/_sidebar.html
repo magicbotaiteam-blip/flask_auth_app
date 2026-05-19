@@ -1,0 +1,110 @@
+<!-- Sidebar Toggle Button (visible on mobile) -->
+<button class="sidebar-toggle" id="sidebarToggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+    <i class="bi bi-list"></i>
+</button>
+
+<!-- Sidebar Overlay (mobile) -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+{% with active_page=active_page|default('') %}
+{% include '_navbar.html' %}
+{% endwith %}
+
+<!-- Sidebar Navigation -->
+<div class="sidebar" id="appSidebar">
+    <div class="sidebar-brand">
+        <a href="{{ url_for('landing') }}">
+            <img src="{{ url_for('static', filename='Magic_Bot_AI.jpg') }}" alt="AI Magic Bot">
+            AI Magic Bot
+        </a>
+    </div>
+
+    <!-- Main Navigation -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Main</div>
+        <a href="{{ url_for('index') }}" class="sidebar-item {% if active_page == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+    </div>
+
+    <!-- Bots -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Bot</div>
+        <a href="{{ url_for('my_bots') }}" class="sidebar-item {% if active_page == 'my_bots' %}active{% endif %}">
+            <i class="bi bi-list-ul"></i> My Bots
+        </a>
+        <a href="{{ url_for('register_bot') }}" class="sidebar-item {% if active_page == 'register' %}active{% endif %}">
+            <i class="bi bi-plus-circle"></i> New Bot
+        </a>
+    </div>
+
+    <!-- Groups -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Groups</div>
+        <a href="/groups" class="sidebar-item">
+            <i class="bi bi-people"></i> My Groups
+        </a>
+        <a href="/groups/create" class="sidebar-item">
+            <i class="bi bi-plus-circle"></i> Create Group
+        </a>
+    </div>
+
+    <!-- Admin -->
+    {% if role == 'admin' %}
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Admin</div>
+        <a href="{{ url_for('find_users') }}" class="sidebar-item">
+            <i class="bi bi-people"></i> Users
+        </a>
+        <a href="/usage" class="sidebar-item {% if active_page == 'usage' %}active{% endif %}">
+            <i class="bi bi-chat-dots"></i> Usages
+        </a>
+        <a href="/admin/contacts" class="sidebar-item {% if active_page == 'admin_contacts' %}active{% endif %}">
+            <i class="bi bi-chat-dots"></i> Contacts
+        </a>
+    </div>
+    {% endif %}
+
+    <!-- User Footer -->
+    <div class="sidebar-footer">
+        <div class="sidebar-user-info">
+            <div class="avatar">
+                {{ username[:1].upper() if username else 'U' }}
+            </div>
+            <div>
+                <div class="user-name">{{ username }}</div>
+                <div class="user-role">{{ role|title if role else 'User' }}</div>
+            </div>
+            <a href="{{ url_for('logout') }}" class="ms-auto text-white-50" title="Logout">
+                <i class="bi bi-box-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleSidebar() {
+    const sidebar = document.getElementById('appSidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const toggle = document.getElementById('sidebarToggle');
+    sidebar.classList.toggle('open');
+    if (overlay) overlay.classList.toggle('show');
+    document.body.classList.toggle('sidebar-open');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.sidebar-item').forEach(function(item) {
+        item.addEventListener('click', function() {
+            if (window.innerWidth <= 768) {
+                const sidebar = document.getElementById('appSidebar');
+                const overlay = document.getElementById('sidebarOverlay');
+                if (sidebar && sidebar.classList.contains('open')) {
+                    sidebar.classList.remove('open');
+                    if (overlay) overlay.classList.remove('show');
+                    document.body.classList.remove('sidebar-open');
+                }
+            }
+        });
+    });
+});
+</script>

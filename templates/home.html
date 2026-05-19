@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - AI Magic Bot{% endblock %}
+{% block content %}
+{% with active_page='home' %}
+{% include '_sidebar.html' %}
+<div class="sidebar-content">
+{% endwith %}
+
+<style>
+    .dashboard-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 40px 20px;
+    }
+
+    .welcome-card {
+        background: rgba(15, 23, 42, 0.6);
+        backdrop-filter: blur(16px);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+        border-radius: 24px;
+        padding: 60px 40px;
+        text-align: center;
+        margin-bottom: 40px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .welcome-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle at 30% 50%, rgba(124, 58, 237, 0.08) 0%, transparent 50%),
+                    radial-gradient(circle at 70% 50%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
+        pointer-events: none;
+    }
+
+    .greeting {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 10px;
+    }
+
+    .greeting .highlight-text {
+        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 24px;
+        margin-bottom: 40px;
+    }
+
+    .feature-card {
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(148, 163, 184, 0.12);
+        border-radius: 20px;
+        padding: 30px;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .feature-card:hover {
+        border-color: rgba(96, 165, 250, 0.4);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-icon-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 16px;
+        font-size: 1.8rem;
+    }
+
+    .feature-card h3 {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: #e2e8f0;
+    }
+
+    .feature-card p {
+        color: #94a3b8;
+        font-size: 0.9rem;
+        line-height: 1.6;
+        margin-bottom: 0;
+    }
+
+    .quick-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 40px;
+    }
+
+    .stat-card {
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: 16px;
+        padding: 24px;
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .stat-label {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+    }
+</style>
+
+<div class="dashboard-container">
+    <div class="welcome-card">
+        <div class="position-relative">
+            <h1 class="greeting">Welcome back, <span class="highlight-text">{{ username }}</span>!</h1>
+            <p class="text-muted fs-5 mb-4">Your AI-powered automation dashboard</p>
+            <div class="d-flex flex-wrap justify-content-center gap-4">
+                <a href="{{ url_for('register_bot') }}" class="btn btn-primary btn-lg px-5" style="border-radius: 14px; font-weight: 700;">
+                    <i class="bi bi-plus-circle"></i> Create a New Bot
+                </a>
+                <a href="{{ url_for('my_bots') }}" class="btn btn-outline-light btn-lg px-5" style="border-radius: 14px; font-weight: 700; border-width: 2px;">
+                    <i class="bi bi-robot"></i> View My Bots
+                </a>
+            </div>
+        </div>
+    </div>
+
+    {% if role == 'admin' %}
+    <div class="quick-stats">
+        <div class="stat-card">
+            <div class="stat-number">⚡</div>
+            <div class="stat-label">Admin Access</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">🛡️</div>
+            <div class="stat-label">Full Control</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-number">🌐</div>
+            <div class="stat-label">Manage Users</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="text-center mb-4">
+        <span class="badge-premium">✨ FEATURES</span>
+        <h2 class="display-6 fw-bold mt-3">Your <span class="highlight-text">AI Magic Bot</span> Powers</h2>
+    </div>
+
+    <div class="feature-grid">
+        <div class="feature-card">
+            <div class="feature-icon-circle" style="background: rgba(96, 165, 250, 0.15); color: #60a5fa;">
+                <i class="bi bi-robot"></i>
+            </div>
+            <h3>AI-Powered Bots</h3>
+            <p>Register and manage AI bots that work 24/7 on your behalf.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon-circle" style="background: rgba(124, 58, 237, 0.15); color: #a78bfa;">
+                <i class="bi bi-shield-check"></i>
+            </div>
+            <h3>Enterprise Security</h3>
+            <p>Your data is protected with industry-leading security standards.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon-circle" style="background: rgba(16, 185, 129, 0.15); color: #34d399;">
+                <i class="bi bi-globe"></i>
+            </div>
+            <h3>Global Access</h3>
+            <p>Access your bots securely from anywhere in the world.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

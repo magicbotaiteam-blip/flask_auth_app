@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Magic Bot AI - Bots Management Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .btn-google {
+            width: 100%;
+            padding: 14px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid rgba(148, 163, 184, 0.4);
+            border-radius: 8px;
+            color: #cbd5e1;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-google:hover {
+            background: rgba(30, 41, 59, 1);
+            border-color: rgba(148, 163, 184, 0.6);
+        }
+        .hero-section {
+            position: relative;
+            color: white;
+            padding: 6rem 0;
+            min-height: 90vh;
+            display: flex;
+            align-items: center;
+            overflow: hidden;
+        }
+        .hero-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            opacity: 0;
+            animation: bgSlideshow 20s infinite;
+        }
+        .hero-bg:nth-child(1) {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+                              url("{{ url_for('static', filename='AI_IMG1.jpeg') }}");
+            animation-delay: 0s;
+        }
+        .hero-bg:nth-child(2) {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), 
+                              url("{{ url_for('static', filename='AI_IMG_2.jpeg') }}");
+            animation-delay: 10s;
+        }
+        @keyframes bgSlideshow {
+            0% { opacity: 0; }
+            10% { opacity: 1; }
+            40% { opacity: 1; }
+            50% { opacity: 0; }
+            100% { opacity: 0; }
+        }
+        .hero-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.8) 0%, rgba(118, 75, 162, 0.8) 100%);
+            z-index: 1;
+        }
+        .hero-section .container {
+            position: relative;
+            z-index: 2;
+        }
+        .hero-section h1 {
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .hero-section p {
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+        /* Slideshow Controls */
+        .slideshow-controls {
+            position: absolute;
+            bottom: 2rem;
+            left: 0;
+            right: 0;
+            z-index: 3;
+            text-align: center;
+        }
+        .slideshow-dots {
+            display: inline-flex;
+            gap: 0.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+        }
+        .slideshow-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .slideshow-dot.active {
+            background: white;
+            transform: scale(1.2);
+        }
+        .slideshow-dot:hover {
+            background: white;
+            transform: scale(1.1);
+        }
+        .slideshow-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100%;
+            z-index: 3;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 1rem;
+        }
+        .slideshow-nav-btn {
+            background: rgba(0, 0, 0, 0.3);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .slideshow-nav-btn:hover {
+            background: rgba(0, 0, 0, 0.3);
+            transform: scale(1.1);
+        }
+        .feature-card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .cta-button {
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+        }
+        .hero-image {
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hero-image:hover {
+            transform: scale(1.05);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+        }
+        .workflow-image {
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-robot"></i> Magic Bot AI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">Home</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="featuresDropdown" role="button" data-bs-toggle="dropdown">
+                            Features
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/features/openclaw">OpenClaw</a></li>
+                            <li><a class="dropdown-item" href="/features/application">Magic Bot AI</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#pricing">Pricing</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/signin_local">Sign In</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <!-- Background Image Slideshow -->
+        <div class="hero-bg"></div>
+        <div class="hero-bg"></div>
+        
+        <!-- Overlay -->
+        <div class="hero-overlay"></div>
+        
+        <!-- Navigation Controls -->
+        <div class="slideshow-nav">
+            <button class="slideshow-nav-btn" id="prev-slide">
+                <i class="bi bi-chevron-left"></i>
+            </button>
+            <button class="slideshow-nav-btn" id="next-slide">
+                <i class="bi bi-chevron-right"></i>
+            </button>
+        </div>
+        
+        <!-- Slide Indicators -->
+        <div class="slideshow-controls">
+            <div class="slideshow-dots">
+                <div class="slideshow-dot active" data-slide="0"></div>
+                <div class="slideshow-dot" data-slide="1"></div>
+                <button class="slideshow-nav-btn slideshow-pause-btn" id="pause-slide" style="margin-left: 1rem;">
+                    <i class="bi bi-pause-fill"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold mb-4">Build, Manage & Collaborate on Bots</h1>
+                    <p class="lead mb-4">Magic Bot AI is the complete platform for creating, managing, and collaborating on Telegram bots and other messaging platforms.</p>
+                    <div class="d-flex gap-3">
+                        <a href="/signup_local" class="btn btn-light cta-button">
+                            <i class="bi bi-rocket-takeoff"></i> Get Started Free
+                        </a>
+                        <a href="/signin_local" class="btn btn-outline-light cta-button">
+                            <i class="bi bi-box-arrow-in-right"></i> Sign In
+                        </a>
+                    </div>
+                </div>
+                <div class="col-lg-6 text-center">
+                    <div class="position-relative">
+                        <div class="bg-white bg-opacity-25 rounded-circle p-5 d-inline-block mb-4">
+                            <img src="{{ url_for('static', filename='AI_IMG_2.jpeg') }}" 
+                                 alt="Magic Bot AI Platform" 
+                                 class="img-fluid rounded-circle hero-image"
+                                 style="max-width: 300px; height: auto;">
+                        </div>
+                        <div class="position-absolute top-0 start-100 translate-middle">
+                            <span class="badge bg-warning text-dark p-2">
+                                <i class="bi bi-lightning"></i> AI-Powered
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-muted mt-3">Visualize your bot management workflow</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features -->
+    <section id="features" class="py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">Everything You Need for Bots Management</h2>
+                <p class="text-muted">From creation to collaboration, we've got you covered</p>
+            </div>
+
+            <div class="row g-4">
+                <!-- Feature 1 -->
+                <div class="col-md-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="bg-primary bg-opacity-10 rounded-circle p-3 d-inline-block mb-4">
+                                <i class="bi bi-robot fs-2 text-primary"></i>
+                            </div>
+                            <h4 class="card-title">Bots Management</h4>
+                            <p class="card-text text-muted">
+                                Create and manage Telegram bots with our easy-to-use interface. 
+                                Validate tokens, set webhooks, and configure commands.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="col-md-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="bg-success bg-opacity-10 rounded-circle p-3 d-inline-block mb-4">
+                                <i class="bi bi-people fs-2 text-success"></i>
+                            </div>
+                            <h4 class="card-title">Group Collaboration</h4>
+                            <p class="card-text text-muted">
+                                Work together with your group. Share bots, templates, 
+                                and communicate in real-time with group chat.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="col-md-4">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center p-4">
+                            <div class="bg-warning bg-opacity-10 rounded-circle p-3 d-inline-block mb-4">
+                                <i class="bi bi-graph-up fs-2 text-warning"></i>
+                            </div>
+                            <h4 class="card-title">Analytics</h4>
+                            <p class="card-text text-muted">
+                                Track bot performance, group activity, and usage patterns 
+                                with comprehensive analytics and reporting.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- More Features -->
+            <div class="row g-4 mt-3">
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-share fs-3 text-info"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Shared Bots</h5>
+                                    <p class="text-muted">Share bots with group members and control permissions.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <div class="d-flex">
+                                <div class="flex-shrink-0">
+                                    <i class="bi bi-file-earmark-code fs-3 text-purple"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5>Templates</h5>
+                                    <p class="text-muted">Create and share bot templates for quick deployment.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works -->
+    <section class="bg-light py-5">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold mb-3">How It Works</h2>
+                <p class="text-muted">Get started in just a few simple steps</p>
+                
+                <!-- Visual workflow image -->
+                <div class="row justify-content-center mt-4">
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-body p-4">
+                                <img src="{{ url_for('static', filename='AI_IMG_2.jpeg') }}" 
+                                     alt="Magic Bot AI Workflow" 
+                                     class="img-fluid rounded workflow-image"
+                                     style="max-height: 200px; width: 100%; object-fit: cover;">
+                                <div class="mt-3">
+                                    <small class="text-muted">Visualize your bot management workflow with AI assistance</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row text-center">
+                <div class="col-md-3 mb-4">
+                    <div class="bg-white rounded-circle p-4 d-inline-block mb-3">
+                        <i class="bi bi-1-circle display-4 text-primary"></i>
+                    </div>
+                    <h5>Sign Up</h5>
+                    <p class="text-muted">Create your account in seconds</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="bg-white rounded-circle p-4 d-inline-block mb-3">
+                        <i class="bi bi-2-circle display-4 text-primary"></i>
+                    </div>
+                    <h5>Create Bots</h5>
+                    <p class="text-muted">Add your Telegram bot tokens</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="bg-white rounded-circle p-4 d-inline-block mb-3">
+                        <i class="bi bi-3-circle display-4 text-primary"></i>
+                    </div>
+                    <h5>Invite Group</h5>
+                    <p class="text-muted">Add group members to collaborate</p>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="bg-white rounded-circle p-4 d-inline-block mb-3">
+                        <i class="bi bi-4-circle display-4 text-primary"></i>
+                    </div>
+                    <h5>Collaborate</h5>
+                    <p class="text-muted">Share bots and work together</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-lg-8 text-center">
+                    <h2 class="display-5 fw-bold mb-4">Ready to Build Amazing Bots?</h2>
+                    <p class="lead mb-4">Join thousands of developers and groups building better bots with Magic Bot AI.</p>
+                    <a href="/signup_local" class="btn btn-primary btn-lg cta-button">
+                        <i class="bi bi-rocket-takeoff"></i> Start Free Today
+                    </a>
+                    <p class="text-muted mt-3 small">No credit card required • Free forever for personal use</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-robot"></i> Magic Bot AI</h5>
+                    <p class="text-muted">Complete bot management platform with group collaboration</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="mb-0">&copy; 2025 Magic Bot AI. All rights reserved.</p>
+                    <p class="text-muted small">Built with Flask • Secure • Open Source</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Slideshow JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const backgrounds = document.querySelectorAll('.hero-bg');
+            const dots = document.querySelectorAll('.slideshow-dot');
+            const prevBtn = document.getElementById('prev-slide');
+            const nextBtn = document.getElementById('next-slide');
+            const pauseBtn = document.getElementById('pause-slide');
+            
+            let currentSlide = 0;
+            const totalSlides = backgrounds.length;
+            let slideshowInterval;
+            
+            // Function to show a specific slide
+            function showSlide(index) {
+                // Reset all backgrounds
+                backgrounds.forEach(bg => {
+                    bg.style.opacity = '0';
+                    bg.style.animation = 'none';
+                });
+                
+                // Reset all dots
+                dots.forEach(dot => dot.classList.remove('active'));
+                
+                // Set current slide
+                currentSlide = (index + totalSlides) % totalSlides;
+                
+                // Show current background
+                backgrounds[currentSlide].style.opacity = '1';
+                
+                // Update active dot
+                dots[currentSlide].classList.add('active');
+                
+                // Restart animation for current slide
+                setTimeout(() => {
+                    backgrounds[currentSlide].style.animation = 'bgSlideshow 20s infinite';
+                    backgrounds[currentSlide].style.animationDelay = '0s';
+                }, 10);
+            }
+            
+            // Function to start automatic slideshow
+            function startSlideshow() {
+                if (slideshowInterval) clearInterval(slideshowInterval);
+                slideshowInterval = setInterval(() => {
+                    showSlide(currentSlide + 1);
+                }, 10000); // Change every 10 seconds
+            }
+            
+            // Function to stop automatic slideshow
+            function stopSlideshow() {
+                if (slideshowInterval) {
+                    clearInterval(slideshowInterval);
+                    slideshowInterval = null;
+                }
+            }
+            
+            // Initialize slideshow
+            showSlide(0);
+            startSlideshow();
+            
+            // Dot click events
+            dots.forEach((dot, index) => {
+                dot.addEventListener('click', () => {
+                    stopSlideshow();
+                    showSlide(index);
+                    // Restart after 10 seconds of inactivity
+                    setTimeout(startSlideshow, 10000);
+                });
+            });
+            
+            // Previous button
+            prevBtn.addEventListener('click', () => {
+                stopSlideshow();
+                showSlide(currentSlide - 1);
+                setTimeout(startSlideshow, 10000);
+            });
+            
+            // Next button
+            nextBtn.addEventListener('click', () => {
+                stopSlideshow();
+                showSlide(currentSlide + 1);
+                setTimeout(startSlideshow, 10000);
+            });
+            
+            // Pause button
+            let isPaused = false;
+            pauseBtn.addEventListener('click', () => {
+                if (isPaused) {
+                    startSlideshow();
+                    pauseBtn.innerHTML = '<i class="bi bi-pause-fill"></i>';
+                    pauseBtn.title = 'Pause slideshow';
+                } else {
+                    stopSlideshow();
+                    pauseBtn.innerHTML = '<i class="bi bi-play-fill"></i>';
+                    pauseBtn.title = 'Play slideshow';
+                }
+                isPaused = !isPaused;
+            });
+            
+            // Pause on hover
+            const heroSection = document.querySelector('.hero-section');
+            heroSection.addEventListener('mouseenter', stopSlideshow);
+            heroSection.addEventListener('mouseleave', () => {
+                if (!isPaused) startSlideshow();
+            });
+            
+            // Keyboard navigation
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'ArrowLeft') {
+                    stopSlideshow();
+                    showSlide(currentSlide - 1);
+                    setTimeout(startSlideshow, 10000);
+                } else if (e.key === 'ArrowRight') {
+                    stopSlideshow();
+                    showSlide(currentSlide + 1);
+                    setTimeout(startSlideshow, 10000);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

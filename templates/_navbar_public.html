@@ -1,0 +1,107 @@
+{# 
+    Public Navigation Bar Component
+    For pages that don't require login (advertisement, features, etc.)
+    Usage: {% include '_navbar_public.html' %}
+#}
+
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <div class="container">
+        <!-- Brand Logo -->
+        <a class="navbar-brand" href="/advertisement">
+            <img src="{{ url_for('static', filename='Magic_Bot_AI.jpg') }}" alt="AI Magic Bot" 
+                 style="width: 40px; height: 40px; border-radius: 10px; margin-right: 10px; border: 2px solid rgba(255, 255, 255, 0.2);">
+            <i class="bi bi-magic"></i> AI Magic Bot
+        </a>
+        
+        <!-- Mobile Toggle Button -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <!-- Navigation Links -->
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <!-- Home/Advertisement -->
+                <li class="nav-item">
+                    <a class="nav-link" href="/advertisement">
+                        <i class="bi bi-house me-1"></i> Home
+                    </a>
+                </li>
+                
+                <!-- Features Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="featuresDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-stars me-1"></i> Features
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="featuresDropdown" style="background: var(--dark-color); border: 1px solid rgba(255,255,255,0.1);">
+                        <li>
+                            <a class="dropdown-item text-white" href="/features/openclaw">
+                                <i class="bi bi-claw me-2"></i> OpenClaw
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-white" href="/features/application">
+                                <i class="bi bi-robot me-2"></i> AI Magic Bot
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item text-white" href="/features/how-to-start">
+                                <i class="bi bi-play-circle me-2"></i> How to Get Started
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+                
+                <!-- Pricing -->
+                <li class="nav-item">
+                    <a class="nav-link" href="/pricing">
+                        <i class="bi bi-tags me-1"></i> Pricing
+                    </a>
+                </li>
+                
+                <!-- Contact -->
+                <li class="nav-item">
+                    <a class="nav-link" href="/advertisement#contact">
+                        <i class="bi bi-envelope me-1"></i> Contact
+                    </a>
+                </li>
+                
+                <!-- Call to Action Buttons -->
+                <li class="nav-item ms-3">
+                    <a href="/signup_local" class="btn btn-primary" style="border-radius: 10px; padding: 8px 20px; font-weight: 600;">
+                        <i class="bi bi-rocket-takeoff me-1"></i> Get Started
+                    </a>
+                </li>
+                <li class="nav-item ms-2">
+                    <a href="/signin_local" class="btn btn-outline-light" style="border-radius: 10px; padding: 8px 20px; font-weight: 600; border-width: 2px;">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Login
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Add padding to body to account for fixed navbar -->
+<div style="padding-top: 80px;"></div>
+
+<!-- JavaScript for navbar scroll effect -->
+<script>
+    // Navbar scroll effect
+    window.addEventListener('scroll', function() {
+        const navbar = document.querySelector('.navbar');
+        if (window.scrollY > 50) {
+            navbar.classList.add('scrolled');
+        } else {
+            navbar.classList.remove('scrolled');
+        }
+    });
+    
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+    });
+</script>

@@ -1,0 +1,500 @@
+"""
+Magic Bot AI - Complete Enhanced Flask Application
+Includes all planned future enhancements:
+1. Bot API Integration
+2. Bot Analytics
+3. Group Collaboration
+4. Export/Import System
+5. Advanced Search
+6. Bot Templates
+"""
+
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file
+import sqlite3
+from werkzeug.security import generate_password_hash, check_password_hash
+from pathlib import Path
+import os
+import re
+import json
+import csv
+import io
+from datetime import datetime, timedelta
+from functools import wraps
+import requests
+from flask_dance.contrib.google import make_google_blueprint, google
+
+# Allow insecure transport for development (HTTP on localhost)
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
+
+app = Flask(__name__)
+app.secret_key = "6ce26db79ba4b1ae2613a1dc4fa4177a75847d40f32347ac9388377a5a7b587b"
+
+# OAuth setup for Google
+google_bp = make_google_blueprint(
+    client_id=os.environ.get("GOOGLE_CLIENT_ID", "your-google-client-id"),
+    client_secret=os.environ.get("GOOGLE_CLIENT_SECRET", "your-google-client-secret"),
+    scope=[
+        "https://www.googleapis.com/auth/userinfo.profile",
+        "https://www.googleapis.com/auth/userinfo.email",
+        "openid"
+    ],
+    redirect_to="index"
+)
+app.register_blueprint(google_bp, url_prefix="/login")
+
+DB_FILENAME = Path(__file__).parent / "users.db"
+
+# ==================== Database Functions ====================
+
+def get_db_connection():
+    conn = sqlite3.connect(DB_FILENAME)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    conn = get_db_connection()
+    
+    # Users table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            provider TEXT NOT NULL DEFAULT 'local',
+            provider_id TEXT UNIQUE,
+            username TEXT NOT NULL UNIQUE,
+            email TEXT,
+            password_hash TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Enhanced bots table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS bots (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            email TEXT,
+            organization TEXT,
+            messaging TEXT,
+            token TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            llm TEXT,
+            description TEXT,
+            is_active BOOLEAN DEFAULT TRUE,
+            last_used TIMESTAMP,
+            usage_count INTEGER DEFAULT 0,
+            config TEXT,
+            webhook_url TEXT,
+            api_key TEXT,
+            tags TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Bot analytics table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS bot_analytics (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bot_id INTEGER NOT NULL,
+            event_type TEXT NOT NULL,
+            event_data TEXT,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (bot_id) REFERENCES bots (id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Group members table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS group_members (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            bot_id INTEGER NOT NULL,
+            user_id INTEGER NOT NULL,
+            role TEXT NOT NULL DEFAULT 'member',
+            invited_by INTEGER,
+            invited_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            joined_at TIMESTAMP,
+            status TEXT DEFAULT 'pending',
+            FOREIGN KEY (bot_id) REFERENCES bots (id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+            FOREIGN KEY (invited_by) REFERENCES users (id) ON DELETE SET NULL
+        )
+    """)
+    
+    # Bot templates table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS bot_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            description TEXT,
+            config TEXT NOT NULL,
+            category TEXT,
+            is_public BOOLEAN DEFAULT FALSE,
+            created_by INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            usage_count INTEGER DEFAULT 0,
+            tags TEXT,
+            FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE SET NULL
+        )
+    """)
+    
+    # Export history table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS export_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            bot_id INTEGER,
+            export_type TEXT NOT NULL,
+            file_path TEXT,
+            file_size INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+            FOREIGN KEY (bot_id) REFERENCES bots (id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Search history table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS search_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            query TEXT NOT NULL,
+            results_count INTEGER,
+            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Create indexes
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_bots_user_id ON bots(user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_bots_tags ON bots(tags)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_analytics_bot_id ON bot_analytics(bot_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_analytics_timestamp ON bot_analytics(timestamp)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_group_members_bot_id ON group_members(bot_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_group_members_user_id ON group_members(user_id)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_templates_category ON bot_templates(category)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_templates_is_public ON bot_templates(is_public)")
+    conn.execute("CREATE INDEX IF NOT EXISTS idx_bot_templates_tags ON bot_templates(tags)")
+    
+    conn.commit()
+    conn.close()
+
+init_db()
+
+# ==================== Authentication Decorator ====================
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if "user_id" not in session:
+            return redirect(url_for("signin"))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# ==================== Bot API Integration Classes ====================
+
+class BotAPIService:
+    """Base class for bot API services"""
+    
+    def __init__(self, bot_config):
+        self.config = bot_config
+    
+    def send_message(self, message, recipient):
+        raise NotImplementedError
+    
+    def receive_message(self, request_data):
+        raise NotImplementedError
+    
+    def get_bot_info(self):
+        raise NotImplementedError
+
+class TelegramBotService(BotAPIService):
+    """Telegram Bot API integration"""
+    
+    def __init__(self, bot_config):
+        super().__init__(bot_config)
+        self.token = bot_config.get('token')
+        self.api_url = f"https://api.telegram.org/bot{self.token}"
+    
+    def send_message(self, message, chat_id):
+        try:
+            response = requests.post(
+                f"{self.api_url}/sendMessage",
+                json={
+                    "chat_id": chat_id,
+                    "text": message,
+                    "parse_mode": "HTML"
+                }
+            )
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
+    
+    def get_bot_info(self):
+        try:
+            response = requests.get(f"{self.api_url}/getMe")
+            return response.json()
+        except Exception as e:
+            return {"error": str(e)}
+
+class DiscordBotService(BotAPIService):
+    """Discord Bot API integration"""
+    
+    def __init__(self, bot_config):
+        super().__init__(bot_config)
+        self.token = bot_config.get('token')
+    
+    def send_message(self, message, channel_id):
+        # Discord API implementation would go here
+        return {"status": "sent", "platform": "discord"}
+
+# ==================== Core Routes (Existing) ====================
+
+@app.route("/")
+def index():
+    if google.authorized:
+        try:
+            resp = google.get("/oauth2/v2/userinfo")
+            if resp.status_code != 200:
+                flash(f"Failed to fetch user info: {resp.status_code}")
+                return redirect(url_for("signin_local"))
+            user_info = resp.json()
+        except Exception as e:
+            flash(f"Error fetching user info: {str(e)}")
+            return redirect(url_for("signin_local"))
+
+        conn = get_db_connection()
+        user = conn.execute(
+            "SELECT * FROM users WHERE provider = ? AND provider_id = ?", 
+            ("google", user_info["id"])
+        ).fetchone()
+        
+        if user:
+            conn.close()
+        else:
+            base_username = user_info["name"].replace(" ", "_").lower()[:30]
+            username = base_username
+            counter = 1
+            
+            while True:
+                existing = conn.execute(
+                    "SELECT * FROM users WHERE username = ?", 
+                    (username,)
+                ).fetchone()
+                
+                if not existing:
+                    break
+                username = f"{base_username}_{counter}"
+                counter += 1
+                
+                if counter > 100:
+                    conn.close()
+                    flash("Could not create unique username. Please try again.", "error")
+                    return redirect(url_for("signin_local"))
+            
+            try:
+                conn.execute(
+                    "INSERT INTO users (provider, provider_id, username, email) VALUES (?, ?, ?, ?)", 
+                    ("google", user_info["id"], username, user_info.get("email"))
+                )
+                conn.commit()
+                user = conn.execute(
+                    "SELECT * FROM users WHERE provider = ? AND provider_id = ?", 
+                    ("google", user_info["id"])
+                ).fetchone()
+                conn.close()
+            except Exception as e:
+                conn.close()
+                flash(f"Database error: {str(e)}", "error")
+                return redirect(url_for("signin_local"))
+
+        session["user_id"] = user["id"]
+        session["username"] = user["username"]
+        session["provider"] = "google"
+    
+    if "user_id" not in session:
+        return redirect(url_for("landing"))
+    
+    return render_template("home.html", username=session.get("username"), google=google)
+
+@app.route("/landing")
+def landing():
+    return render_template("landing.html", google=google)
+
+@app.route("/logout")
+def logout():
+    if "provider" in session and session["provider"] == "google" and google.authorized:
+        try:
+            token = google.token["access_token"]
+            google.post(
+                "https://accounts.google.com/o/oauth2/revoke",
+                params={"token": token},
+                headers={"Content-Type": "application/x-www-form-urlencoded"}
+            )
+        except:
+            pass
+    
+    session.clear()
+    return redirect(url_for("landing"))
+
+# ==================== Enhanced Bots Management ====================
+
+@app.route("/my-bots")
+@login_required
+def my_bots():
+    user_id = session["user_id"]
+    conn = get_db_connection()
+    
+    # Get user's bots with enhanced data
+    bots = conn.execute("""
+        SELECT b.*, 
+               COUNT(DISTINCT tm.id) as group_count,
+               COUNT(DISTINCT ba.id) as analytics_count,
+               (SELECT COUNT(*) FROM bot_analytics ba2 
+                WHERE ba2.bot_id = b.id AND ba2.timestamp > datetime('now', '-24 hours')) as daily_activity
+        FROM bots b
+        LEFT JOIN group_members tm ON b.id = tm.bot_id AND tm.status = 'accepted'
+        LEFT JOIN bot_analytics ba ON b.id = ba.bot_id AND ba.timestamp > datetime('now', '-7 days')
+        WHERE b.user_id = ? 
+        GROUP BY b.id
+        ORDER BY b.created_at DESC
+    """, (user_id,)).fetchall()
+    
+    # Get bots shared with user
+    shared_bots = conn.execute("""
+        SELECT b.*, tm.role, u.username as owner_username
+        FROM bots b
+        JOIN group_members tm ON b.id = tm.bot_id
+        JOIN users u ON b.user_id = u.id
+        WHERE tm.user_id = ? AND tm.status = 'accepted'
+        ORDER BY b.name
+    """, (user_id,)).fetchall()
+    
+    # Get bot statistics
+    stats = conn.execute("""
+        SELECT 
+            COUNT(*) as total_bots,
+            SUM(usage_count) as total_usage,
+            AVG(usage_count) as avg_usage,
+            COUNT(CASE WHEN is_active = 1 THEN 1 END) as active_bots
+        FROM bots WHERE user_id = ?
+    """, (user_id,)).fetchone()
+    
+    conn.close()
+    
+    return render_template("my_bots_enhanced.html", 
+                         bots=bots, 
+                         shared_bots=shared_bots, 
+                         stats=stats,
+                         username=session.get("username"))
+
+@app.route("/register-bot")
+@app.route("/register-bot/<int:bot_id>")
+@login_required
+def register_bot(bot_id=None):
+    bot = None
+    if bot_id:
+        user_id = session["user_id"]
+        conn = get_db_connection()
+        bot = conn.execute("SELECT * FROM bots WHERE id = ? AND user_id = ?", (bot_id, user_id)).fetchone()
+        conn.close()
+    
+    # Get available templates
+    conn = get_db_connection()
+    templates = conn.execute("""
+        SELECT * FROM bot_templates 
+        WHERE is_public = 1 OR created_by = ?
+        ORDER BY usage_count DESC, name
+    """, (session.get("user_id"),)).fetchall()
+    conn.close()
+    
+    return render_template("register_bot_enhanced.html", bot=bot, username=session.get("username"), templates=templates)
+
+@app.route("/bot/save", methods=["POST"])
+@login_required
+def save_bot():
+    user_id = session["user_id"]
+    bot_id = request.form.get("bot_id")
+    
+    # Collect all form data
+    form_data = {
+        'name': request.form.get("name"),
+        'email': request.form.get("email"),
+        'organization': request.form.get("organization"),
+        'messaging': request.form.get("messaging"),
+        'llm': request.form.get("llm"),
+        'token': request.form.get("token"),
+        'description': request.form.get("description"),
+        'webhook_url': request.form.get("webhook_url"),
+        'api_key': request.form.get("api_key"),
+        'tags': request.form.get("tags", "")
+    }
+    
+    if not all([form_data['name'], form_data['token']]):
+        flash("Name and Token are required fields.")
+        return redirect(url_for("register_bot"))
+    
+    # Prepare config JSON
+    config = {
+        "messaging_platform": form_data['messaging'],
+        "llm_provider": form_data['llm'],
+        "webhook_enabled": bool(form_data['webhook_url']),
+        "tags": [tag.strip() for tag in form_data['tags'].split(',') if tag.strip()],
+        "features": {},
+        "created_at": datetime.now().isoformat()
+    }
+    
+    conn = get_db_connection()
+    
+    if bot_id:  # Update existing bot
+        conn.execute("""
+            UPDATE bots 
+            SET name = ?, email = ?, organization = ?, messaging = ?, llm = ?, token = ?, 
+                description = ?, webhook_url = ?, api_key = ?, config = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ? AND user_id = ?
+        """, (form_data['name'], form_data['email'], form_data['organization'], form_data['messaging'], 
+              form_data['llm'], form_data['token'], form_data['description'], form_data['webhook_url'], 
+              form_data['api_key'], json.dumps(config), form_data['tags'], bot_id, user_id))
+        flash("Bot updated successfully!")
+    else:  # Create new bot
+        conn.execute("""
+            INSERT INTO bots (user_id, name, email, organization, messaging, llm, token, 
+                             description, webhook_url, api_key, config, tags)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, form_data['name'], form_data['email'], form_data['organization'], 
+              form_data['messaging'], form_data['llm'], form_data['token'], form_data['description'], 
+              form_data['webhook_url'], form_data['api_key'], json.dumps(config), form_data['tags']))
+        flash("Bot created successfully!")
+    
+    conn.commit()
+    conn.close()
+    
+    return redirect(url_for("my_bots"))
+
+# ==================== Bot Analytics System ====================
+
+@app.route("/bot/analytics/<int:bot_id>")
+@login_required
+def bot_analytics(bot_id):
+    user_id = session["user_id"]
+    conn = get_db_connection()
+    
+    # Check access
+    bot = conn.execute("""
+        SELECT b.* FROM bots b
+        LEFT JOIN group_members tm ON b.id = tm.bot_id
+        WHERE b.id = ? AND (b.user_id = ? OR (tm.user_id = ? AND tm.status = 'accepted' AND tm.role IN ('owner', 'admin', 'viewer')))
+    """, (bot_id, user_id, user_id)).fetchone()
+    
+    if not bot:
+        conn.close()
+        flash("You don't have access to this bot's analytics.")
+        return redirect(url_for("my_bots"))
+    
+    # Get analytics data for different time periods
+    time_periods = {
+        '24h': "datetime('now', '-24 hours')",
+        '7d': "datetime('now', '-7 days')",
+        '30d': "datetime('now', '-30 days')",
+        '

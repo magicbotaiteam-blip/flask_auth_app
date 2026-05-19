@@ -1,0 +1,101 @@
+#!/usr/bin/env python3
+"""
+Fix database lock issues in create_team function
+"""
+
+import re
+
+def fix_create_team():
+    with open('team_collaboration_ui.py', 'r') as f:
+        content = f.read()
+    
+    # Find the create_team function
+    # Look for the pattern from "def create_team():" to the end of the function
+    pattern = r'(def create_team\(\):.*?)(?=\n\s*def|\Z)'
+    
+    match = re.search(pattern, content, re.DOTALL)
+    if not match:
+        print("Could not find create_team function")
+        return
+    
+    func_text = match.group(1)
+    
+    # Check if it already has proper transaction handling
+    if 'BEGIN IMMEDIATE' in func_text:
+        print("Function already has transaction handling")
+        return
+    
+    # Replace the try block with better transaction handling
+    # Find the try block inside the function
+    try_pattern = r'(try:\s*)(# Execute INSERT.*?)(except Exception as e:.*?)'
+    
+    func_fixed = re.sub(try_pattern, 
+        r'''try:
+                # Get a fresh connection for this transaction
+                conn = get_db_connection()
+                
+                # Start explicit transaction with immediate lock
+                conn.execute("BEGIN IMMEDIATE")
+                
+                # Execute INSERT and capture the cursor
+                cursor = conn.execute("""
+                    INSERT INTO teams (name, description, created_by, settings)
+                    VALUES (?, ?, ?, ?)
+                """, (name, description, user_id, json.dumps({
+                    "allow_public_invites": False,
+                    "default_role": "member",
+                    "bot_sharing": True,
+                    "message_history": 90  # days
+                })))
+                
+                # Get the last insert ID from the cursor
+                team_id = cursor.lastrowid
+                
+                # Add creator as owner
+                conn.execute("""
+                    INSERT INTO team_members (team_id, user_id, role, invited_by)
+                    VALUES (?, ?, ?, ?)
+                """, (team_id, user_id, 'owner', user_id))
+                
+                # Commit transaction
+                conn.commit()
+                conn.close()
+                
+                # Log activity (with a new connection to avoid locks)
+                try:
+                    log_team_activity(team_id, user_id, 'team_created', {
+                        'team_name': name,
+                        'description': description
+                    }, request)
+                except Exception as log_error:
+                    print(f"Warning: Failed to log activity: {log_error}")
+                    # Don't fail team creation if logging fails
+                
+                flash(f"Team '{name}' created successfully!", "success")
+                return redirect(url_for("team_dashboard", team_id=team_id))
+                
+            except Exception as e:
+                # Try to rollback and close connection
+                try:
+                    conn.rollback()
+                    conn.close()
+                except:
+                    pass
+                
+                flash(f"Error creating team: {e}", "error")
+                return render_template("create_team.html", username=session.get("username"))''',
+        func_text, flags=re.DOTALL)
+    
+    if func_fixed != func_text:
+        # Replace the function in the content
+        new_content = content.replace(func_text, func_fixed)
+        
+        with open('team_collaboration_ui.py', 'w') as f:
+            f.write(new_content)
+        
+        print("Fixed create_team function with proper transaction handling")
+    else:
+        print("No changes needed")
+
+if __name__ == "__main__":
+    fix_create_team()

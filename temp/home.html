@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Magic Bot AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: 
+            
+            color: #0d131a;
+            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        /* Navigation */
+        nav {
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: 700;
+            color: #60a5fa;
+            text-decoration: none;
+        }
+        
+        .nav-menu {
+            display: flex;
+            gap: 40px;
+            align-items: center;
+            list-style: none;
+            margin: 0;
+        }
+        
+        .nav-item {
+            position: relative;
+        }
+        
+        .nav-link {
+            color: #cbd5e1;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: color 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+        }
+        
+        .nav-link:hover {
+            color: #60a5fa;
+        }
+        
+        .dropdown-toggle::after {
+            content: '▼';
+            font-size: 10px;
+            margin-left: 4px;
+        }
+        
+        /* Dropdown Menu */
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background: rgba(30, 41, 59, 0.98);
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            border-radius: 8px;
+            min-width: 220px;
+            padding: 12px 0;
+            display: none;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            margin-top: 8px; /* Add margin instead of top gap */
+        }
+        
+        .nav-item.active .dropdown-menu
+        .nav-item:hover .dropdown-menu {
+            display: block;
+        }
+        
+        /* Create an invisible bridge between nav-link and dropdown */
+        .nav-item::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            height: 8px; /* Same as margin-top */
+            background: transparent;
+        }
+        
+        .dropdown-menu {
+            pointer-events: auto;
+        }
+        
+        .dropdown-item {
+            color: #cbd5e1;
+            text-decoration: none;
+            padding: 12px 24px;
+            display: block;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+        
+        .dropdown-item:hover {
+            background: rgba(96, 165, 250, 0.1);
+            color: #60a5fa;
+            padding-left: 32px;
+        }
+        
+        .nav-actions {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .logout-btn {
+            background: rgba(148, 163, 184, 0.1);
+            color: #e2e8f0;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 10px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 13px;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .logout-btn:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: #e2e8f0;
+            text-decoration: none;
+        }
+        
+        /* Dashboard Container */
+        .dashboard-container {
+            max-width: 1000px;
+            margin: 60px auto;
+            padding: 0 20px;
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .welcome-section {
+            background: rgba(30, 41, 59, 0.25);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 16px;
+            padding: 60px 40px;
+            text-align: center;
+            margin-bottom: 40px;
+            transition: background 0.3s ease;
+        }
+
+        .user-info {
+            background: rgba(148, 163, 184, 0.1);
+            color: #e2e8f0;
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+        }
+
+        .user-info:hover {
+            background: rgba(148, 163, 184, 0.2);
+            color: #e2e8f0;
+        }
+
+        .nav-user-info {
+            margin-right: 10px;
+        }
+
+        .nav-user-info .user-name {
+            font-size: 13px;
+        }
+
+        .welcome-section:hover {
+            background: rgba(30, 41, 59, 0.55);
+        }
+        
+        .welcome-section h1 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 15px;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .welcome-section p {
+            font-size: 20px;
+            color: #cbd5e1;
+            margin-bottom: 30px;
+        }
+        
+        .features-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-item {
+            background: rgba(30, 41, 59, 0.5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .feature-item:hover {
+            border-color: rgba(96, 165, 250, 0.5);
+            background: rgba(51, 65, 85, 0.3);
+        }
+        
+        .feature-icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+        
+        .feature-item h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .feature-item p {
+            color: #cbd5e1;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-container {
+                padding: 0 20px;
+            }
+            
+            .nav-menu {
+                gap: 20px;
+            }
+            
+            .nav-link {
+                font-size: 12px;
+            }
+            
+            .welcome-section {
+                padding: 40px 20px;
+            }
+            
+            .welcome-section h1 {
+                font-size: 32px;
+            }
+            
+            .welcome-section p {
+                font-size: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav>
+        <div class="nav-container">
+            <a href="{{ url_for('landing') }}" class="navbar-brand">Magic Bot AI</a>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <span class="nav-link dropdown-toggle">AI</span>
+                    <div class="dropdown-menu">
+                        <a href="{{ url_for('register_bot') }}" class="dropdown-item">Register a new bot</a>
+                        <a href="{{ url_for('my_bots') }}" class="dropdown-item">My bots</a>
+                        {% if role == 'admin' %}
+                        <a href="#" class="dropdown-item">Amazing Bot</a>
+                        <a href="#" class="dropdown-item">Your Usage</a>
+                        <a href="#" class="dropdown-item">Your Payments</a>
+                        {% endif %}
+                    </div>
+                </li>
+                {% if role == 'admin' %}
+                <li class="nav-item">
+                    <a href="#" class="nav-link">Resources</a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link">About</a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <div class="nav-actions">
+                <a href="{{ url_for('profile') }}" class="user-info nav-user-info" style="text-decoration: none;">
+                    <div class="user-name">{{ username }}</div>
+                </a>
+                <a href="{{ url_for('logout') }}" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Dashboard -->
+    <div class="dashboard-container">
+        <section class="welcome-section">
+            <h1>Welcome to Magic Bot AI</h1>
+            <p>You're protected by enterprise-grade security. Enjoy secure access to Magic Bot AI.</p>
+        </section>
+        
+        <section class="features-section">
+            <div class="feature-item">
+                <div class="feature-icon">🔐</div>
+                <h3>Secure Session</h3>
+                <p>Your session is protected with encrypted tokens and secure OAuth authentication.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">🌍</div>
+                <h3>Global Access</h3>
+                <p>Access your account securely from anywhere with enterprise-grade authentication.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">⚙️</div>
+                <h3>Privacy First</h3>
+                <p>Your data is protected with industry-leading privacy and security standards.</p>
+            </div>
+        </section>
+    </div>
+    
+    <script>
+        // Handle AI dropdown menu with better hover handling
+        (function() {
+            let activeDropdown = null;
+            let hideTimeout = null;
+            
+            // Function to show dropdown
+            function showDropdown(item) {
+                clearTimeout(hideTimeout);
+                if (activeDropdown && activeDropdown !== item) {
+                    activeDropdown.classList.remove('active');
+                }
+                item.classList.add('active');
+                activeDropdown = item;
+            }
+            
+            // Function to hide dropdown with delay
+            function hideDropdown(item) {
+                hideTimeout = setTimeout(() => {
+                    if (activeDropdown === item) {
+                        item.classList.remove('active');
+                        activeDropdown = null;
+                    }
+                }, 200); // 200ms delay to allow moving to dropdown
+            }
+            
+            // Set up event listeners for nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('mouseenter', function() {
+                    showDropdown(this);
+                });
+                
+                item.addEventListener('mouseleave', function(e) {
+                    // Check if mouse is moving to dropdown
+                    const dropdown = this.querySelector('.dropdown-menu');
+                    const relatedTarget = e.relatedTarget;
+                    
+                    if (dropdown && dropdown.contains(relatedTarget)) {
+                        return; // Don't hide if moving to dropdown
+                    }
+                    
+                    hideDropdown(this);
+                });
+            });
+            
+            // Set up event listeners for dropdown menus
+            document.querySelectorAll('.dropdown-menu').forEach(menu => {
+                menu.addEventListener('mouseenter', function() {
+                    clearTimeout(hideTimeout);
+                    const parentItem = this.closest('.nav-item');
+                    if (parentItem) {
+                        showDropdown(parentItem);
+                    }
+                });
+                
+                menu.addEventListener('mouseleave', function() {
+                    const parentItem = this.closest('.nav-item');
+                    if (parentItem) {
+                        hideDropdown(parentItem);
+                    }
+                });
+            });
+        })();
+    </script>
+</body>
+</html>

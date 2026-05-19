@@ -1,0 +1,136 @@
+#!/usr/bin/env python3
+"""
+Test that all required templates exist
+"""
+
+import os
+
+print("Checking required templates...")
+print("=" * 60)
+
+# List of required templates based on the code
+required_templates = [
+    'team_bots.html',
+    'team_members.html', 
+    'team_chat.html',
+    'team_templates.html',
+    'team_settings.html',
+    'team_template.html',  # singular - for create/edit
+    'create_team.html',
+    'team_dashboard.html',
+    'teams.html',
+    'home_with_teams.html',
+    'landing_with_teams.html',
+    'my_bots_with_teams.html',
+    'register_bot.html',
+    'signin_local.html',
+    'signup_local.html'
+]
+
+templates_dir = 'templates'
+missing = []
+existing = []
+
+for template in required_templates:
+    path = os.path.join(templates_dir, template)
+    if os.path.exists(path):
+        existing.append(template)
+        size = os.path.getsize(path)
+        print(f"✅ {template} ({size} bytes)")
+    else:
+        missing.append(template)
+        print(f"❌ {template} (MISSING)")
+
+print(f"\n✅ {len(existing)} templates exist")
+print(f"❌ {len(missing)} templates missing")
+
+if missing:
+    print("\nMissing templates:")
+    for template in missing:
+        print(f"  - {template}")
+
+print("\n" + "=" * 60)
+
+# Test if the app can import and render templates
+print("\nTesting template rendering...")
+
+# Remove old database
+if os.path.exists('users.db'):
+    os.remove('users.db')
+
+try:
+    from app_complete_with_teams import app, init_db_complete
+    init_db_complete()
+    print("✅ App imports successfully")
+    
+    # Create a test context
+    from flask import Flask
+    test_app = Flask(__name__)
+    test_app.secret_key = 'test'
+    
+    # Register routes
+    from telegram_bot_api import create_telegram_bot_api
+    from telegram_bot_api_part2 import create_telegram_bot_api_part2
+    from team_collaboration_ui import create_team_collaboration_ui
+    from team_collaboration_ui_part2 import create_team_collaboration_ui_part2
+    
+    create_telegram_bot_api(test_app)
+    create_telegram_bot_api_part2(test_app)
+    create_team_collaboration_ui(test_app)
+    create_team_collaboration_ui_part2(test_app)
+    
+    print("✅ All routes registered")
+    
+    # Test team_bots route specifically
+    with test_app.test_request_context():
+        from flask import session
+        # Create a test user and team
+        from team_collaboration_ui import get_db_connection
+        conn = get_db_connection()
+        conn.execute("""
+            INSERT INTO users (provider, username, email, password_hash) 
+            VALUES (?, ?, ?, ?)
+        """, ('test', 'template_test', 'test@test.com', 'hash'))
+        cursor = conn.execute("SELECT last_insert_rowid()")
+        user_id = cursor.fetchone()[0]
+        
+        conn.execute("""
+            INSERT INTO teams (name, description, created_by, settings)
+            VALUES (?, ?, ?, ?)
+        """, ('Test Team', 'Test', user_id, '{}'))
+        
+        cursor = conn.execute("SELECT last_insert_rowid()")
+        team_id = cursor.fetchone()[0]
+        
+        conn.execute("""
+            INSERT INTO team_members (team_id, user_id, role, invited_by)
+            VALUES (?, ?, ?, ?)
+        """, (team_id, user_id, 'owner', user_id))
+        
+        conn.commit()
+        conn.close()
+        
+        session['user_id'] = user_id
+        
+        # Get the team_bots function
+        team_bots_func = test_app.view_functions['team_bots']
+        
+        try:
+            response = team_bots_func(team_id)
+            print("✅ team_bots function executes without TemplateNotFound error")
+            print("✅ All templates are available!")
+        except Exception as e:
+            print(f"❌ Error: {e}")
+            
+except Exception as e:
+    print(f"❌ Error during test: {e}")
+    import traceback
+    traceback.print_exc()
+
+print("\n" + "=" * 60)
+print("Template check complete!")
+if not missing:
+    print("✅ All required templates are available!")
+else:
+    print(f"⚠️  {len(missing)} templates need to be created")
+print("=" * 60)

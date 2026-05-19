@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ group.name }} - Shared Bots - Magic Bot AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .group-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .bot-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        .bot-card:hover {
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            transform: translateY(-2px);
+        }
+        .bot-avatar {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            margin-right: 1rem;
+        }
+        .permission-badge {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+            margin-right: 0.5rem;
+        }
+        .share-info {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: #666;
+        }
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: #ddd;
+        }
+            body {
+
+                                color: #0d131a;
+                min-height: 100vh;
+            }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-robot"></i> Magic Bot AI
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">
+                            <i class="bi bi-house"></i> Home
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/my-bots">
+                            <i class="bi bi-robot"></i> My Bots
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/groups">
+                            <i class="bi bi-people"></i> Groups
+                        </a>
+                    </li>
+                </ul>
+                <ul class="navbar-nav">
+                    {% if username %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ username }}
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                        </ul>
+                    </li>
+                    {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="/signin_local">Login</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Group Header -->
+    <div class="group-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-1">{{ group.name }}</h1>
+                    <p class="mb-0">{{ group.description or "Group workspace for collaborating on bots" }}</p>
+                </div>
+                <div>
+                    <a href="/groups/{{ group.id }}" class="btn btn-outline-light">
+                        <i class="bi bi-speedometer2"></i> Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Group Navigation -->
+    <div class="container mb-4">
+        <nav class="nav nav-pills">
+            <a class="nav-link" href="/groups/{{ group.id }}">
+                <i class="bi bi-speedometer2"></i> Dashboard
+            </a>
+            <a class="nav-link active" href="/groups/{{ group.id }}/bots">
+                <i class="bi bi-robot"></i> Shared Bots
+            </a>
+            <a class="nav-link" href="/groups/{{ group.id }}/members">
+                <i class="bi bi-people"></i> Members
+            </a>
+            <a class="nav-link" href="/groups/{{ group.id }}/templates">
+                <i class="bi bi-file-earmark-code"></i> Templates
+            </a>
+            <a class="nav-link" href="/groups/{{ group.id }}/settings">
+                <i class="bi bi-gear"></i> Settings
+            </a>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Shared Bots Section -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            <i class="bi bi-robot"></i> Shared Bots
+                        </h5>
+                        <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#shareBotModal">
+                            <i class="bi bi-share"></i> Share a Bot
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        {% if shared_bots %}
+                            {% for bot in shared_bots %}
+                            <div class="bot-card">
+                                <div class="d-flex align-items-start">
+                                    <div class="bot-avatar">
+                                        <i class="bi bi-robot"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h5 class="mb-1">{{ bot.name }}</h5>
+                                                <p class="text-muted mb-2">{{ bot.description or "No description" }}</p>
+                                            </div>
+                                            <div class="dropdown">
+                                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-three-dots-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li><a class="dropdown-item" href="/groups/{{ group.id }}/bots/{{ bot.id }}">View Details</a></li>
+                                                    {% if bot.user_role == 'owner' or bot.user_role == 'admin' %}
+                                                    <li><a class="dropdown-item text-danger" href="#" onclick="unshareBot({{ bot.share_id }})">Unshare from Group</a></li>
+                                                    {% endif %}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="badge bg-info me-2">
+                                                <i class="bi bi-person"></i> {{ bot.owner_name or "Unknown" }}
+                                            </span>
+                                            <span class="badge bg-secondary">
+                                                <i class="bi bi-calendar"></i> Shared {{ bot.shared_at }}
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Permissions -->
+                                        {% if bot.permissions_parsed %}
+                                        <div class="mb-2">
+                                            <small class="text-muted">Permissions:</small>
+                                            {% set perms = bot.permissions_parsed %}
+                                            {% if perms.get('can_edit', false) %}
+                                            <span class="badge bg-success permission-badge">Edit</span>
+                                            {% endif %}
+                                            {% if perms.get('can_use', true) %}
+                                            <span class="badge bg-primary permission-badge">Use</span>
+                                            {% endif %}
+                                            {% if perms.get('can_share', false) %}
+                                            <span class="badge bg-warning permission-badge">Share</span>
+                                            {% endif %}
+                                        </div>
+                                        {% endif %}
+                                        
+                                        <!-- Your Role -->
+                                        <div class="share-info">
+                                            <small>
+                                                <i class="bi bi-shield"></i> Your role: 
+                                                <span class="badge bg-{{ 'success' if bot.user_role == 'owner' else 'primary' if bot.user_role == 'admin' else 'secondary' }}">
+                                                    {{ bot.user_role|title }}
+                                                </span>
+                                            </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty-state">
+                                <i class="bi bi-robot"></i>
+                                <h4>No bots shared yet</h4>
+                                <p class="text-muted">Share your first bot with the group to start collaborating.</p>
+                                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#shareBotModal">
+                                    <i class="bi bi-share"></i> Share a Bot
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- Your Bots Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-collection"></i> Your Bots
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        {% if user_bots %}
+                            <div class="list-group list-group-flush">
+                                {% for bot in user_bots %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>{{ bot.name }}</strong>
+                                        <div class="text-muted small">{{ bot.description|truncate(30) or "No description" }}</div>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="shareThisBot({{ bot.id }})">
+                                        <i class="bi bi-share"></i> Share
+                                    </button>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-3">
+                                <i class="bi bi-robot text-muted" style="font-size: 2rem;"></i>
+                                <p class="text-muted mt-2">You don't have any bots yet.</p>
+                                <a href="/register-bot" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-plus"></i> Create Bot
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Group Info -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle"></i> Group Info
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <ul class="list-unstyled mb-0">
+                            <li class="mb-2">
+                                <i class="bi bi-people text-primary"></i>
+                                <strong>Members:</strong> {{ members|length }}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-robot text-success"></i>
+                                <strong>Shared Bots:</strong> {{ shared_bots|length }}
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-calendar text-info"></i>
+                                <strong>Created:</strong> {{ group.created_at }}
+                            </li>
+                            <li>
+                                <i class="bi bi-person text-warning"></i>
+                                <strong>Your Role:</strong> 
+                                <span class="badge bg-{{ 'success' if user_role == 'owner' else 'primary' if user_role == 'admin' else 'secondary' }}">
+                                    {{ user_role|title }}
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Bot Modal -->
+    <div class="modal fade" id="shareBotModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Share a Bot with Group</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/groups/{{ group.id }}/bots/share" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Select Bot</label>
+                            <select class="form-select" name="bot_id" required>
+                                <option value="">Choose a bot...</option>
+                                {% for bot in user_bots %}
+                                <option value="{{ bot.id }}">{{ bot.name }} - {{ bot.description|truncate(30) or "No description" }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Permissions</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="can_use" id="canUse" checked>
+                                <label class="form-check-label" for="canUse">
+                                    Group members can use this bot
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="can_edit" id="canEdit">
+                                <label class="form-check-label" for="canEdit">
+                                    Group members can edit bot configuration
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="can_share" id="canShare">
+                                <label class="form-check-label" for="canShare">
+                                    Group members can re-share with others
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Share Bot</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Magic Bot AI</h5>
+                    <p class="text-muted">Build, manage, and collaborate on AI-powered bots.</p>
+                </div>
+                <div class="col-md-6 text-end">
+                    <p class="text-muted mb-0">&copy; 2025 Magic Bot AI. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function shareThisBot(botId) {
+            document.querySelector('select[name="bot_id"]').value = botId;
+            new bootstrap.Modal(document.getElementById('shareBotModal')).show();
+        }
+        
+        function unshareBot(shareId) {
+            if (confirm('Are you sure you want to unshare this bot from the group?')) {
+                fetch(`/groups/{{ group.id }}/bots/${shareId}/unshare`, {
+                    method: 'POST'
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (data.error || 'Failed to unshare bot'));
+                    }
+                })
+                .catch(error => {
+                    alert('Error: ' + error.message);
+                });
+            }
+        }
+        
+        // Simple datetime formatter
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.datetimeformat').forEach(function(el) {
+                var date = new Date(el.textContent);
+                el.textContent = date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
+            });
+        });
+    </script>
+</body>
+</html>

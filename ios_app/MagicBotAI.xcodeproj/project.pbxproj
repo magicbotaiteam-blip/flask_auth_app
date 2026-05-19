@@ -1,0 +1,231 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		1A1A1A1A001 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A002; };
+		1A1A1A1A003 /* MagicBotAIApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A004; };
+		1A1A1A1A005 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A006; };
+		1A1A1A1A007 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1A1A1A1A008; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		1A1A1A1A001 /* MagicBot AI.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = "Magic Bot AI.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1A1A1A1A002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		1A1A1A1A004 /* MagicBotAIApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MagicBotAIApp.swift; sourceTree = "<group>"; };
+		1A1A1A1A006 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		1A1A1A1A008 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1A1A1A1A009 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		1A1A1A1A010 = {
+			isa = PBXGroup;
+			children = (
+				1A1A1A1A011 /* MagicBotAI */,
+				1A1A1A1A012 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1A1A1A1A011 /* MagicBotAI */ = {
+			isa = PBXGroup;
+			children = (
+				1A1A1A1A004 /* MagicBotAIApp.swift */,
+				1A1A1A1A002 /* ContentView.swift */,
+				1A1A1A1A006 /* SceneDelegate.swift */,
+				1A1A1A1A008 /* Assets.xcassets */,
+				1A1A1A1A009 /* Info.plist */,
+			);
+			path = MagicBotAI;
+			sourceTree = "<group>";
+		};
+		1A1A1A1A012 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1A1A1A1A001 /* Magic Bot AI.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1A1A1A1A013 /* MagicBotAI */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1A1A1A1A016;
+			buildPhases = (
+				1A1A1A1A017 /* Sources */,
+				1A1A1A1A018 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MagicBotAI;
+			productName = MagicBotAI;
+			productReference = 1A1A1A1A001;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1A1A1A1A019 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1520;
+				LastUpgradeCheck = 1520;
+			};
+			buildConfigurationList = 1A1A1A1A01A;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 1A1A1A1A010;
+			productRefGroup = 1A1A1A1A012;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				1A1A1A1A013 /* MagicBotAI */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1A1A1A1A018 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A1A1A1A007 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1A1A1A1A017 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A1A1A1A003 /* MagicBotAIApp.swift in Sources */,
+				1A1A1A1A001 /* ContentView.swift in Sources */,
+				1A1A1A1A005 /* SceneDelegate.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		1A1A1A1A01B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1A1A1A1A01C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_OPTIMIZATION_LEVEL = s;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		1A1A1A1A01D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = MagicBotAI/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.magicbot.ai;
+				PRODUCT_NAME = "Magic Bot AI";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1A1A1A1A01E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				INFOPLIST_FILE = MagicBotAI/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.magicbot.ai;
+				PRODUCT_NAME = "Magic Bot AI";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1A1A1A1A01A /* Build configuration list for PBXProject "MagicBotAI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A1A1A1A01B /* Debug */,
+				1A1A1A1A01C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A1A1A1A016 /* Build configuration list for PBXNativeTarget "MagicBotAI" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1A1A1A1A01D /* Debug */,
+				1A1A1A1A01E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 1A1A1A1A019 /* Project object */;
+}

@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Analytics - Magic Bot AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .analytics-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .metric-card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .chart-container {
+            background: white;
+            border-radius: 10px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 1.5rem;
+        }
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .metric-label {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+            body {
+
+                                color: #0d131a;
+                min-height: 100vh;
+            }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-robot"></i> Magic Bot AI
+            </a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
+                    <li class="nav-item">{% if role == "admin" %}
+                        <a class="nav-link" href="/admin/bots">Bots</a>
+                    {% else %}
+                        <a class="nav-link" href="/my-bots">My Bots</a>
+                    {% endif %}</li>
+                    <li class="nav-item"><a class="nav-link active" href="#">Analytics</a></li>
+                </ul>
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                            <i class="bi bi-person-circle"></i> {{ username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li><a class="dropdown-item" href="/profile">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="/logout">Logout</a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="analytics-header">
+        <div class="container">
+            <h1><i class="bi bi-graph-up"></i> Bot Analytics</h1>
+            <p class="lead">Performance metrics for: <strong>{{ bot.name }}</strong></p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Bot Info -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="bi bi-info-circle"></i> Bot Information</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <p><strong>Bot Name:</strong> {{ bot.name }}</p>
+                                <p><strong>Bot ID:</strong> {{ bot.id }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Created:</strong> {{ bot.created_at }}</p>
+                                <p><strong>Owner:</strong> {{ bot.owner_username }}</p>
+                            </div>
+                            <div class="col-md-4">
+                                <p><strong>Status:</strong> <span class="badge bg-success">Active</span></p>
+                                <p><strong>Last Active:</strong> {{ bot.last_active or 'Never' }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Key Metrics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">Total Requests</div>
+                    <div class="metric-value">{{ metrics.total_requests or 0 }}</div>
+                    <div class="text-muted">All time</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">Today's Requests</div>
+                    <div class="metric-value">{{ metrics.today_requests or 0 }}</div>
+                    <div class="text-muted">Last 24 hours</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">Success Rate</div>
+                    <div class="metric-value">{{ metrics.success_rate or 0 }}%</div>
+                    <div class="text-muted">Successful responses</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="metric-card">
+                    <div class="metric-label">Avg Response Time</div>
+                    <div class="metric-value">{{ metrics.avg_response_time or 0 }}ms</div>
+                    <div class="text-muted">Milliseconds</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5><i class="bi bi-bar-chart"></i> Requests Over Time</h5>
+                    <div class="text-center py-5">
+                        <i class="bi bi-bar-chart" style="font-size: 4rem; color: #ccc;"></i>
+                        <p class="mt-3 text-muted">Chart data would appear here</p>
+                        <p><small>Requests per day for the last 30 days</small></p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="chart-container">
+                    <h5><i class="bi bi-pie-chart"></i> Response Status Distribution</h5>
+                    <div class="text-center py-5">
+                        <i class="bi bi-pie-chart" style="font-size: 4rem; color: #ccc;"></i>
+                        <p class="mt-3 text-muted">Chart data would appear here</p>
+                        <p><small>Success vs error responses</small></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h4 class="mb-0"><i class="bi bi-clock-history"></i> Recent Activity</h4>
+                        <a href="/my-bots" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left"></i> Back to Bots
+                        </a>
+                    </div>
+                    <div class="card-body">
+                        {% if recent_activity %}
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Time</th>
+                                        <th>Endpoint</th>
+                                        <th>Status</th>
+                                        <th>Response Time</th>
+                                        <th>User Agent</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for activity in recent_activity %}
+                                    <tr>
+                                        <td>{{ activity.timestamp }}</td>
+                                        <td><code>{{ activity.endpoint }}</code></td>
+                                        <td>
+                                            {% if activity.status == 200 %}
+                                            <span class="badge bg-success">200 OK</span>
+                                            {% else %}
+                                            <span class="badge bg-danger">{{ activity.status }} Error</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ activity.response_time }}ms</td>
+                                        <td><small>{{ activity.user_agent|truncate(30) }}</small></td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="text-center py-4">
+                            <i class="bi bi-activity" style="font-size: 3rem; color: #ccc;"></i>
+                            <h5 class="mt-3">No Activity Recorded</h5>
+                            <p class="text-muted">This bot hasn't received any requests yet.</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
