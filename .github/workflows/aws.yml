@@ -48,8 +48,9 @@ jobs:
     - name: Force new ECS deployment
       run: |
         # Get the full current task definition
+        TASK_DEF_FAMILY=${{ env.ECS_CLUSTER }}-${{ env.ECS_SERVICE }}
         TASK_DEF_JSON=$(aws ecs describe-task-definition \
-          --task-definition flask-auth-app-705a \
+          --task-definition "$TASK_DEF_FAMILY" \
           --region ${{ env.AWS_REGION }} \
           --query 'taskDefinition' \
           --output json)
@@ -67,11 +68,11 @@ jobs:
           --region ${{ env.AWS_REGION }} \
           --no-cli-pager > /dev/null 2>&1
         
-        # Update the service to use the latest task definition (auto-picks newest revision)
+        # Update the service to use the latest task definition
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE }} \
-          --task-definition flask-auth-app-705a \
+          --task-definition "$TASK_DEF_FAMILY" \
           --force-new-deployment \
           --no-cli-pager > /dev/null 2>&1
         
