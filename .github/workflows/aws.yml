@@ -10,7 +10,7 @@ env:
   ECS_SERVICE: flask-auth-app-705a
   ECS_CLUSTER: flask-auth-app-cluster
   ECS_TASK_DEFINITION: flask-auth-app-cluster-flask-auth-app-705a
-  CONTAINER_NAME: flask-auth-app
+  CONTAINER_NAME: Main
 
 jobs:
   deploy:
