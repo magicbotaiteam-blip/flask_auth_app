@@ -694,6 +694,24 @@ def health():
     return "OK", 200
 
 
+@app.route("/debug/env")
+def debug_env():
+    """Debug endpoint to check env vars (safe, no secrets exposed)"""
+    cid = os.environ.get("GOOGLE_CLIENT_ID", "NOT SET")
+    # Mask the secret: show first 25 chars and last 10
+    if cid and cid != "NOT SET" and len(cid) > 35:
+        masked = cid[:30] + "..." + cid[-10:]
+    else:
+        masked = cid
+    return {
+        "GOOGLE_CLIENT_ID_length": len(cid) if cid != "NOT SET" else 0,
+        "GOOGLE_CLIENT_ID_value": masked,
+        "OAUTHLIB_INSECURE_TRANSPORT": os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", "NOT SET"),
+        "FLASK_SECRET_KEY_set": "FLASK_SECRET_KEY" in os.environ,
+        "wsgi_url_scheme_override": str(app.__class__.__name__ == "FixedFlask")
+    }
+
+
 @app.route("/landing")
 def landing():
     """Public landing page — redirects logged-in users to their bots"""
