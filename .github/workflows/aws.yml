@@ -1,4 +1,4 @@
-name: Build, Push, and Deploy to Amazon ECS
+name: Build and Push to Amazon ECR
 
 on:
   push:
@@ -7,14 +7,12 @@ on:
 env:
   AWS_REGION: us-east-1
   ECR_REPOSITORY: flask-auth-app
-  ECS_SERVICE: flask-auth-app-705a
   ECS_CLUSTER: flask-auth-app-cluster
-  ECS_TASK_DEFINITION: flask-auth-app-cluster-flask-auth-app-705a
-  CONTAINER_NAME: Main
+  ECS_SERVICE: flask-auth-app-705a
 
 jobs:
   deploy:
-    name: Deploy
+    name: Build, Push, and Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -44,25 +42,10 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Download current task definition
+    - name: Force new ECS deployment
       run: |
-        aws ecs describe-task-definition \
-          --task-definition ${{ env.ECS_TASK_DEFINITION }} \
-          --query taskDefinition \
-          --output json > task-definition.json
-
-    - name: Fill in the new image ID in the task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: task-definition.json
-        container-name: ${{ env.CONTAINER_NAME }}
-        image: ${{ steps.build-image.outputs.image }}
-
-    - name: Deploy Amazon ECS task definition
-      uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-      with:
-        task-definition: ${{ steps.task-def.outputs.task-definition }}
-        service: ${{ env.ECS_SERVICE }}
-        cluster: ${{ env.ECS_CLUSTER }}
-        wait-for-service-stability: true
+        aws ecs update-service \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --service ${{ env.ECS_SERVICE }} \
+          --force-new-deployment \
+          --no-cli-pager
