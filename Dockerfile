@@ -14,8 +14,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Use production .env file
-COPY .env.production .env
+# Accept Google OAuth credentials as build args for production
+ARG GOOGLE_CLIENT_ID
+ARG GOOGLE_CLIENT_SECRET
+ENV GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+ENV GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+ENV OAUTHLIB_INSECURE_TRANSPORT=false
 
 # Expose port 80 (Express Mode ALB expects port 80)
 EXPOSE 80
