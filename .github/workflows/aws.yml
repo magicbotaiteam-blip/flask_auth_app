@@ -47,39 +47,9 @@ jobs:
 
     - name: Force new ECS deployment
       run: |
-        set -x
-        # Get the full current task definition
-        TASK_DEF_FAMILY=${{ env.ECS_CLUSTER }}-${{ env.ECS_SERVICE }}
-        echo "Task definition family: $TASK_DEF_FAMILY"
-        TASK_DEF_JSON=$(aws ecs describe-task-definition \
-          --task-definition "$TASK_DEF_FAMILY" \
-          --region ${{ env.AWS_REGION }} \
-          --query 'taskDefinition' \
-          --output json) || { echo "Failed to get task def"; exit 1; }
-        echo "Got task def"
-        
-        # Update the image to use the new SHA tag (unique per build)
-        NEW_IMAGE=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
-        echo "New image: $NEW_IMAGE"
-        UPDATED_JSON=$(echo "$TASK_DEF_JSON" | jq --arg img "$NEW_IMAGE" '
-          .containerDefinitions[0].image = $img |
-          del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
-        ') || { echo "Failed to update JSON"; exit 1; }
-        
-        # Register a new task definition revision
-        echo "Registering new task definition..."
-        aws ecs register-task-definition \
-          --cli-input-json "$UPDATED_JSON" \
-          --region ${{ env.AWS_REGION }} \
-          --no-cli-pager 2>&1 || { echo "Failed to register task def"; exit 1; }
-        
-        # Update the service to use the latest task definition
-        echo "Updating service..."
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE }} \
-          --task-definition "$TASK_DEF_FAMILY" \
           --force-new-deployment \
-          --no-cli-pager 2>&1 || { echo "Failed to update service"; exit 1; }
-        
-        echo "Deployed with image: $NEW_IMAGE"
+          --no-cli-pager
+        echo "Force new deployment triggered (Express Mode will auto-pick up latest image)"
