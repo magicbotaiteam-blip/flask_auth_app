@@ -47,8 +47,32 @@ jobs:
 
     - name: Force new ECS deployment
       run: |
+        # Get the full current task definition
+        TASK_DEF_JSON=$(aws ecs describe-task-definition \
+          --task-definition flask-auth-app-705a \
+          --region ${{ env.AWS_REGION }} \
+          --query 'taskDefinition' \
+          --output json)
+        
+        # Update the image to use the new SHA tag (unique per build)
+        NEW_IMAGE=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+        UPDATED_JSON=$(echo "$TASK_DEF_JSON" | jq --arg img "$NEW_IMAGE" '
+          .containerDefinitions[0].image = $img |
+          del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)
+        ')
+        
+        # Register a new task definition revision
+        aws ecs register-task-definition \
+          --cli-input-json "$UPDATED_JSON" \
+          --region ${{ env.AWS_REGION }} \
+          --no-cli-pager > /dev/null 2>&1
+        
+        # Update the service to use the latest task definition (auto-picks newest revision)
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
           --service ${{ env.ECS_SERVICE }} \
+          --task-definition flask-auth-app-705a \
           --force-new-deployment \
-          --no-cli-pager
+          --no-cli-pager > /dev/null 2>&1
+        
+        echo "Deployed with image: $NEW_IMAGE"
