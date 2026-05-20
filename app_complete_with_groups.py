@@ -47,8 +47,15 @@ if 'OAUTHLIB_INSECURE_TRANSPORT' not in os.environ:
 app = Flask(__name__)
 app.secret_key = "6ce26db79ba4b1ae2613a1dc4fa4177a75847d40f32347ac9388377a5a7b587b"
 
-# Trust AWS ALB's X-Forwarded-Proto header so Flask-Dance generates HTTPS redirect URIs
-app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
+# Force HTTPS for redirect URIs (AWS ALB terminates SSL, so Flask sees HTTP)
+# ProxyFix would be ideal but requires X-Forwarded-Proto, which Express Mode may not send
+from flask import Flask as FlaskBase
+class FixedFlask(FlaskBase):
+    def __call__(self, environ, start_response):
+        environ['wsgi.url_scheme'] = 'https'
+        return super().__call__(environ, start_response)
+# Override the existing app's __class__ so it uses FixedFlask
+app.__class__ = FixedFlask
 
 # OAuth setup for Google (if available)
 if HAS_GOOGLE_OAUTH:
