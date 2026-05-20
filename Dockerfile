@@ -14,6 +14,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
+# Use production .env file
+COPY .env.production .env
+
 # Expose port 80 (Express Mode ALB expects port 80)
 EXPOSE 80
 

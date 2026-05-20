@@ -13,7 +13,11 @@ from datetime import datetime
 from functools import wraps
 from dotenv import load_dotenv
 
-load_dotenv(dotenv_path=Path('/Users/siyang/flask_cronjobs/.env'), override=True)
+# Load .env file for local dev (silently ignore if not present, e.g. in Docker)
+try:
+    load_dotenv(override=True)
+except Exception:
+    pass
 
 # Import Telegram Bot API
 from telegram_bot_api import create_telegram_bot_api
@@ -35,8 +39,9 @@ except ImportError:
     HAS_GOOGLE_OAUTH = False
     print("Note: Flask-Dance not available, Google OAuth disabled")
 
-# Setup
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
+# Setup — set OAUTHLIB_INSECURE_TRANSPORT for local dev, respect env for production
+if 'OAUTHLIB_INSECURE_TRANSPORT' not in os.environ:
+    os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
 
 app = Flask(__name__)
 app.secret_key = "6ce26db79ba4b1ae2613a1dc4fa4177a75847d40f32347ac9388377a5a7b587b"

@@ -1,49 +1,40 @@
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-
-# Environment
-.env
-.env.*
-
-# Virtual environments
-venv/
-ENV/
-env/
-.venv/
-
-# macOS
-.DS_Store
-
-# Databases
-*.db
-*.sqlite3
-site.db
-users.db
-
-# Logs
-*.log
-
-# Build and distribution
-*.egg-info/
-dist/
-build/
 
 # Backup files
-*~
-*.bak
-*.backup
-
-# IDEs
-.vscode/
-.idea/
-
-# Python bytecode caches
-.pytest_cache/
-
+# Build and distribution
+# Databases
+# Environment
 # Flask uploads
-instance/
-
+# IDEs
+# Logs
+# Python
+# Python bytecode caches
+# Virtual environments
+# macOS
 # secret files
+*$py.class
+*.backup
+*.bak
+*.db
+*.egg-info/
+*.log
+*.py[cod]
+*.sqlite3
+*~
+.DS_Store
+.env
+.env.*
+.env.production
+.idea/
+.pytest_cache/
+.venv/
+.vscode/
+ENV/
+__pycache__/
+build/
+dist/
+env/
+instance/
 secrets.json
+site.db
+users.db
+venv/
