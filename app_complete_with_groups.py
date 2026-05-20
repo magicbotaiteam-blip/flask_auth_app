@@ -672,6 +672,12 @@ def index():
                          google=HAS_GOOGLE_OAUTH,
                          role=role)
 
+
+@app.route("/health")
+def health():
+    return "OK", 200
+
+
 @app.route("/landing")
 def landing():
     """Public landing page — redirects logged-in users to their bots"""
@@ -1844,4 +1850,4 @@ if __name__ == "__main__":
     print("Press Ctrl+C to stop")
     print("=" * 60)
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=80)
