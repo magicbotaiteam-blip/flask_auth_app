@@ -15,10 +15,12 @@ from functools import wraps
 from dotenv import load_dotenv
 
 # Load .env file for local dev (silently ignore if not present, e.g. in Docker)
-try:
-    load_dotenv(override=True)
-except Exception:
-    pass
+# Skip in production when env vars are set via build args or system env.
+if not os.environ.get('SKIP_DOTENV'):
+    try:
+        load_dotenv(override=True)
+    except Exception:
+        pass
 
 # Import Telegram Bot API
 from telegram_bot_api import create_telegram_bot_api
