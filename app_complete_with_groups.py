@@ -6,6 +6,7 @@ With Telegram Bot API + Group Collaboration UI
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file, send_from_directory
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.middleware.proxy_fix import ProxyFix
 from pathlib import Path
 import os
 import json
@@ -45,6 +46,9 @@ if 'OAUTHLIB_INSECURE_TRANSPORT' not in os.environ:
 
 app = Flask(__name__)
 app.secret_key = "6ce26db79ba4b1ae2613a1dc4fa4177a75847d40f32347ac9388377a5a7b587b"
+
+# Trust AWS ALB's X-Forwarded-Proto header so Flask-Dance generates HTTPS redirect URIs
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1)
 
 # OAuth setup for Google (if available)
 if HAS_GOOGLE_OAUTH:
