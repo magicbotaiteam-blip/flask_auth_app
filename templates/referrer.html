@@ -170,10 +170,10 @@
                                 <tr class="{% if tier.badge_name == badge_name %}table-active fw-semibold{% endif %}">
                                     <td><span style="font-size: 1.5rem;">{{ tier.badge_icon }}</span> {{ tier.badge_name }}</td>
                                     <td>
-                                        {% if tier.max_referrals %}
-                                            {{ tier.min_referrals }}–{{ tier.max_referrals }}
-                                        {% else %}
+                                        {% if tier.max_referrals is none or tier.max_referrals == '' %}
                                             50+
+                                        {% else %}
+                                            {{ tier.min_referrals }} – {{ tier.max_referrals }}
                                         {% endif %}
                                     </td>
                                     <td>{{ tier.credits_reward }}</td>

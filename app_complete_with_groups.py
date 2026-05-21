@@ -196,7 +196,7 @@ def init_db_complete():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             min_referrals INTEGER NOT NULL,
             max_referrals INTEGER,
-            badge_name TEXT NOT NULL,
+            badge_name TEXT NOT NULL UNIQUE,
             badge_icon TEXT NOT NULL,
             credits_reward INTEGER DEFAULT 0,
             description TEXT
@@ -213,6 +213,20 @@ def init_db_complete():
             status TEXT DEFAULT 'pending',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Reset reward tiers to clean state (recreate with UNIQUE constraint)
+    conn.execute('DROP TABLE IF EXISTS reward_tiers')
+    conn.execute("""
+        CREATE TABLE reward_tiers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            min_referrals INTEGER NOT NULL,
+            max_referrals INTEGER,
+            badge_name TEXT NOT NULL UNIQUE,
+            badge_icon TEXT NOT NULL,
+            credits_reward INTEGER DEFAULT 0,
+            description TEXT
         )
     """)
     
