@@ -70,16 +70,59 @@ jobs:
       run: |
         # Express Mode auto-manages listener rules and updates them on each
         # deployment. List all HTTPS:443 rules, skip the default rule and
-        # our custom rule, then grab the SG ARN from the Express-managed rule.
+        # our custom rule, then grab the TG ARN from the Express-managed rule.
+        #
+        # IMPORTANT: Express Mode may swap target groups AFTER ecs wait
+        # services-stable completes. We poll until the TG is stable
+        # (2 consecutive identical reads with healthy targets).
         LISTENER_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:listener/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b/6cf5a0b04ef7190f"
         OUR_RULE_ARN="${{ env.LISTENER_RULE_ARN }}"
-        RULES=$(aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --output json)
-        TG_ARN=$(echo "$RULES" | jq -r \
-          --arg our_rule "$OUR_RULE_ARN" \
-          '.Rules[] | select(.Priority != "default") | select(.RuleArn != $our_rule) |
-          .Actions[0].ForwardConfig.TargetGroups[0].TargetGroupArn' | head -1)
-        echo "Express active target group ARN: $TG_ARN"
-        echo "target_group_arn=$TG_ARN" >> $GITHUB_OUTPUT
+
+        extract_tg() {
+          aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --output json | \
+            jq -r --arg our_rule "$OUR_RULE_ARN" \
+              '.Rules[] | select(.Priority != "default") | select(.RuleArn != $our_rule) |
+              .Actions[0].ForwardConfig.TargetGroups[0].TargetGroupArn' | head -1
+        }
+
+        PREV_TG=""
+        SAME_COUNT=0
+        MAX_ATTEMPTS=30
+
+        for i in $(seq 1 $MAX_ATTEMPTS); do
+          CURRENT_TG=$(extract_tg)
+          if [ -z "$CURRENT_TG" ] || [ "$CURRENT_TG" = "null" ]; then
+            echo "Attempt $i: No Express-managed rule found yet, waiting..."
+            sleep 10
+            continue
+          fi
+
+          # Check if the TG has healthy targets
+          HEALTHY=$(aws elbv2 describe-target-health \
+            --target-group-arn "$CURRENT_TG" \
+            --query 'TargetHealthDescriptions[?TargetHealth.State==`healthy`] | length(@)' \
+            --output text 2>/dev/null || echo "0")
+
+          echo "Attempt $i: TG=$CURRENT_TG, healthy=$HEALTHY, prev=$PREV_TG"
+
+          if [ "$CURRENT_TG" = "$PREV_TG" ] && [ "$HEALTHY" -gt 0 ]; then
+            SAME_COUNT=$((SAME_COUNT + 1))
+            echo "Same TG with healthy targets for $SAME_COUNT consecutive checks"
+            if [ $SAME_COUNT -ge 2 ]; then
+              echo "Target group is stable and healthy. Using: $CURRENT_TG"
+              echo "target_group_arn=$CURRENT_TG" >> $GITHUB_OUTPUT
+              exit 0
+            fi
+          else
+            SAME_COUNT=0
+            PREV_TG="$CURRENT_TG"
+          fi
+
+          sleep 10
+        done
+
+        echo "ERROR: Could not find stable target group with healthy targets after $((MAX_ATTEMPTS * 10)) seconds"
+        exit 1
 
     - name: Update listener rule for www.magicaibots.com
       run: |
