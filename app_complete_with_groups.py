@@ -173,6 +173,23 @@ def init_db_complete():
         )
     """)
     
+    # Migration: add referral columns to existing users table
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN referral_credits INTEGER DEFAULT 0")
+        print("[DB] Added referral_credits column to users")
+    except sqlite3.OperationalError:
+        pass  # Column already exists
+    try:
+        conn.execute("ALTER TABLE users ADD COLUMN referral_badge TEXT DEFAULT NULL")
+        print("[DB] Added referral_badge column to users")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("ALTER TABLE referrals ADD COLUMN reward_given BOOLEAN DEFAULT FALSE")
+        print("[DB] Added reward_given column to referrals")
+    except sqlite3.OperationalError:
+        pass
+    
     # Reward tiers table
     conn.execute("""
         CREATE TABLE IF NOT EXISTS reward_tiers (
