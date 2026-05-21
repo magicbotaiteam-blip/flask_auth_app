@@ -447,6 +447,12 @@ def pricing():
     """Pricing page"""
     return render_template("pricing.html")
 
+@app.route("/referral-program")
+def referral_program():
+    """Public referral program page"""
+    return render_template("referral_program.html")
+
+
 @app.route("/advertisement")
 def advertisement():
     """Advertisement landing page"""
