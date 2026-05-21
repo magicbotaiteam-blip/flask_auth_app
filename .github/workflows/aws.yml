@@ -65,28 +65,18 @@ jobs:
           --services ${{ env.ECS_SERVICE }}
         echo "Deployment stable"
 
-    - name: Get target group from current service revision
+    - name: Get Express Mode target group from service deployments
       id: get-tg
       run: |
-        # Get the most recent successful deployment
-        DEPLOYMENTS=$(aws ecs describe-services \
+        # In Express Mode, target groups are dynamically created per deployment.
+        # The target group ARN is available in the deployment's loadBalancers.
+        TG_ARN=$(aws ecs describe-services \
           --cluster ${{ env.ECS_CLUSTER }} \
           --services ${{ env.ECS_SERVICE }} \
-          --query 'services[0].deployments' \
-          --output json)
-        
-        # Get the task definition ARN from the primary (running) deployment
-        TASK_DEF_ARN=$(echo "$DEPLOYMENTS" | jq -r '.[] | select(.status == "PRIMARY") | .taskDefinition')
-        echo "Task definition: $TASK_DEF_ARN"
-        
-        # Get the load balancer config from the service
-        LB_CONFIG=$(aws ecs describe-services \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --services ${{ env.ECS_SERVICE }} \
-          --query 'services[0].loadBalancers[0].targetGroupArn' \
+          --query 'services[0].deployments[0].loadBalancers[0].targetGroupArn' \
           --output text)
-        echo "target_group_arn=$LB_CONFIG" >> $GITHUB_OUTPUT
-        echo "Target group: $LB_CONFIG"
+        echo "Target group ARN: $TG_ARN"
+        echo "target_group_arn=$TG_ARN" >> $GITHUB_OUTPUT
 
     - name: Update listener rule for www.magicaibots.com
       run: |
