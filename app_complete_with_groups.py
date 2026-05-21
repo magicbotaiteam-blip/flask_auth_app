@@ -155,6 +155,21 @@ def init_db_complete():
     conn.execute("INSERT OR IGNORE INTO roles (name) VALUES ('admin')")
     conn.execute("INSERT OR IGNORE INTO roles (name) VALUES ('customer')")
     
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS referrals (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            referrer_user_id INTEGER NOT NULL,
+            your_name TEXT,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            relationship TEXT,
+            signed_up_user_id INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (referrer_user_id) REFERENCES users (id) ON DELETE CASCADE,
+            FOREIGN KEY (signed_up_user_id) REFERENCES users (id) ON DELETE SET NULL
+        )
+    """)
+    
     # Group collaboration tables (will be created by init_group_db)
     init_group_db()
     
@@ -621,6 +636,12 @@ def index():
                     ("google", user_info["id"])
                 ).fetchone()
                 
+                # Update any pending referrals that match this email
+                conn.execute("""
+                    UPDATE referrals SET signed_up_user_id = ?
+                    WHERE email = ? AND signed_up_user_id IS NULL
+                """, (user["id"], user_info.get("email")))
+                
                 customer_role = conn.execute("SELECT id FROM roles WHERE name = 'customer'").fetchone()
                 conn.execute("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", (user["id"], customer_role["id"]))
                 conn.commit()
@@ -884,6 +905,12 @@ def signup_local():
                     conn.rollback()
                     # Re-commit the user creation
                     conn.commit()
+            
+            # Update any pending referrals that match this email
+            conn.execute("""
+                UPDATE referrals SET signed_up_user_id = ?
+                WHERE email = ? AND signed_up_user_id IS NULL
+            """, (user["id"], email))
             
             customer_role = conn.execute("SELECT id FROM roles WHERE name = 'customer'").fetchone()
             conn.execute("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", (user["id"], customer_role["id"]))
@@ -1739,6 +1766,13 @@ def user_add():
             password_hash = generate_password_hash(password)
             conn.execute("INSERT INTO users (provider, username, email, password_hash) VALUES (?, ?, ?, ?)", ("local", username, email, password_hash))
             new_user = conn.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+            
+            # Update any pending referrals that match this email
+            conn.execute("""
+                UPDATE referrals SET signed_up_user_id = ?
+                WHERE email = ? AND signed_up_user_id IS NULL
+            """, (new_user['id'], email))
+            
             role_id = conn.execute("SELECT id FROM roles WHERE name = ?", (role_name,)).fetchone()['id']
             conn.execute("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", (new_user['id'], role_id))
             conn.commit()
@@ -1861,6 +1895,155 @@ def refresh_usage():
         capture_output=True, text=True, timeout=30
     )
     return f"<pre>stdout:\n{result.stdout}\nstderr:\n{result.stderr}</pre>"
+
+# ==================== Referrer Page ====================
+
+@app.route("/referrer", methods=["GET", "POST"])
+def referrer():
+    if "user_id" not in session:
+        return redirect(url_for("signin_local"))
+    
+    user_id = session["user_id"]
+    role = session.get("role", "customer")
+    conn = get_db_connection()
+    
+    if request.method == "POST":
+        name = request.form.get("name", "").strip()
+        email = request.form.get("email", "").strip()
+        relationship = request.form.get("relationship", "").strip()
+        
+        errors = []
+        if not name:
+            errors.append("Name is required.")
+        if not email:
+            errors.append("Email is required.")
+        elif '@' not in email or '.' not in email.split('@')[-1]:
+            errors.append("Please enter a valid email address.")
+        
+        if errors:
+            for error in errors:
+                flash(error, "error")
+        else:
+            existing = conn.execute(
+                "SELECT id FROM referrals WHERE referrer_user_id = ? AND email = ?",
+                (user_id, email)
+            ).fetchone()
+            
+            if existing:
+                flash(f"You have already referred {email}.", "warning")
+            else:
+                referred_user = conn.execute(
+                    "SELECT id FROM users WHERE email = ?", (email,)
+                ).fetchone()
+                signed_up_user_id = referred_user["id"] if referred_user else None
+                your_name = request.form.get("your_name", "").strip()
+                if not your_name:
+                    your_name = session.get("username", "A friend")
+                
+                conn.execute(
+                    """INSERT INTO referrals (referrer_user_id, your_name, name, email, relationship, signed_up_user_id)
+                       VALUES (?, ?, ?, ?, ?, ?)""",
+                    (user_id, your_name, name, email, relationship, signed_up_user_id)
+                )
+                conn.commit()
+                
+                # Send invitation email
+                try:
+                    import tempfile, subprocess
+                    app_url = request.host_url.rstrip('/')
+                    signup_link = f"{app_url}/signup_local"
+                    email_body = (
+                        f"Hi {name},\n\n"
+                        f"{your_name} has invited you to join Magic Bot AI — an intelligent automation platform "
+                        f"that helps you create and manage AI-powered bots with ease.\n\n"
+                        f"Whether you need to automate repetitive tasks, build intelligent chatbots, "
+                        f"or streamline your workflow, Magic Bot AI makes it simple and powerful.\n\n"
+                        f"Join {your_name} and start your journey today:\n"
+                        f"{signup_link}\n\n"
+                        f"We look forward to seeing what you'll create!\n\n"
+                        f"Warmly,\n"
+                        f"The Magic Bot AI Team"
+                    )
+                    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                        f.write(email_body)
+                        temp_path = f.name
+                    result = subprocess.run(
+                        ["gog", "mail", "send",
+                         "--to", email,
+                         "--subject", f"{your_name} has invited you to join Magic Bot AI!",
+                         "--body-file", temp_path,
+                         "--account", "chingtshenbot@gmail.com"],
+                        capture_output=True, text=True, timeout=30
+                    )
+                    os.unlink(temp_path)
+                    if result.returncode == 0:
+                        print(f"[REFERRAL] Invitation email sent to {email}")
+                    else:
+                        print(f"[REFERRAL] Failed to send email to {email}: {result.stderr}")
+                except Exception as e:
+                    print(f"[REFERRAL] Email send error for {email}: {e}")
+                
+                flash(f"{name} has been referred successfully! An invitation email has been sent.", "success")
+    
+    if role == "admin":
+        referrals = conn.execute("""
+            SELECT r.*, u.username as referrer_username
+            FROM referrals r
+            JOIN users u ON r.referrer_user_id = u.id
+            ORDER BY r.created_at DESC
+        """).fetchall()
+    else:
+        referrals = conn.execute(
+            """SELECT r.*, 
+                      (SELECT u2.username FROM users u2 WHERE u2.id = r.signed_up_user_id) as signed_up_username
+               FROM referrals r 
+               WHERE r.referrer_user_id = ? 
+               ORDER BY r.created_at DESC""",
+            (user_id,)
+        ).fetchall()
+    
+    total_referred = len(referrals)
+    pending_count = sum(1 for ref in referrals if ref["signed_up_user_id"] is None)
+    signed_up_count = sum(1 for ref in referrals if ref["signed_up_user_id"] is not None)
+    conn.close()
+    
+    return render_template("referrer.html",
+                           referrals=referrals,
+                           total_referred=total_referred,
+                           pending_count=pending_count,
+                           signed_up_count=signed_up_count,
+                           username=session.get("username"),
+                           role=role)
+
+
+# ==================== Delete Referral ====================
+
+@app.route("/referrer/delete/<int:ref_id>")
+def delete_referral(ref_id):
+    if "user_id" not in session:
+        return redirect(url_for("signin_local"))
+    
+    user_id = session["user_id"]
+    role = session.get("role", "customer")
+    conn = get_db_connection()
+    
+    if role == "admin":
+        ref = conn.execute("SELECT * FROM referrals WHERE id = ?", (ref_id,)).fetchone()
+    else:
+        ref = conn.execute("SELECT * FROM referrals WHERE id = ? AND referrer_user_id = ?", (ref_id, user_id)).fetchone()
+    
+    if not ref:
+        conn.close()
+        flash("Referral not found.", "error")
+        return redirect(url_for("referrer"))
+    
+    conn.execute("DELETE FROM referrals WHERE id = ?", (ref_id,))
+    conn.commit()
+    conn.close()
+    
+    flash(f"Referral for {ref['name']} has been deleted.", "success")
+    return redirect(url_for("referrer"))
+
 
 # ==================== Run Application ====================
 

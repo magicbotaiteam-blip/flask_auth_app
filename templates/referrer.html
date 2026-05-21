@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+{% block title %}Referral Program - AI Magic Bot{% endblock %}
+{% block content %}
+{% with active_page='referrer' %}
+{% include '_sidebar.html' %}
+<div class="sidebar-content">
+{% endwith %}
+
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1"><i class="bi bi-share"></i> Referral Program</h2>
+                <p class="lead mb-0" style="color: #fff;">Refer friends and grow the community</p>
+            </div>
+        </div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category if category != 'error' else 'danger' }} alert-dismissible fade show">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-4 mb-2" style="color: var(--primary-color, #7c3aed);">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ total_referred }}</h3>
+                    <p class="text-muted mb-0">Total Referred</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-4 mb-2" style="color: var(--warning-color, #f59e0b);">
+                        <i class="bi bi-clock-history"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ pending_count }}</h3>
+                    <p class="text-muted mb-0">Pending Sign-up</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-4 mb-2" style="color: var(--success-color, #10b981);">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                    <h3 class="fw-bold mb-1">{{ signed_up_count }}</h3>
+                    <p class="text-muted mb-0">Signed Up</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Referral Form -->
+        <div class="col-lg-5 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-bottom p-3">
+                    <h5 class="mb-0"><i class="bi bi-person-plus"></i> Refer Someone New</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('referrer') }}">
+                        <div class="mb-3">
+                            <label for="your_name" class="form-label fw-semibold">
+                                Your Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="your_name" name="your_name"
+                                   placeholder="Enter your name (shown in the invitation email)"
+                                   value="{{ username }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-semibold">
+                                Referred Person's Name <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name"
+                                   placeholder="Enter full name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="email" class="form-label fw-semibold">
+                                Email <span class="text-danger">*</span>
+                            </label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                   placeholder="Enter email address" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="relationship" class="form-label fw-semibold">
+                                Relationship <span class="text-muted small">(optional)</span>
+                            </label>
+                            <input type="text" class="form-control" id="relationship" name="relationship"
+                                   placeholder="e.g. Colleague, Friend, Family">
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold">
+                            <i class="bi bi-send"></i> Submit Referral
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referral List -->
+        <div class="col-lg-7 mb-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-bottom p-3 d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-list-ul"></i> Your Referrals</h5>
+                    <span class="badge bg-primary rounded-pill">{{ total_referred }}</span>
+                </div>
+                <div class="card-body p-0">
+                    {% if referrals %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    {% if role == 'admin' %}
+                                    <th>Referred By</th>
+                                    {% endif %}
+                                    <th>Your Name</th>
+                                    <th>Referred</th>
+                                    <th>Email</th>
+                                    <th>Relationship</th>
+                                    <th>Status</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ref in referrals %}
+                                <tr>
+                                    {% if role == 'admin' %}
+                                    <td>
+                                        <span class="badge bg-info" title="Referrer User">
+                                            {{ ref.referrer_username }}
+                                        </span>
+                                    </td>
+                                    {% endif %}
+                                    <td class="fw-medium">{{ ref.your_name or ref.referrer_username or username }}</td>
+                                    <td class="fw-medium">{{ ref.name }}</td>
+                                    <td>
+                                        <a href="mailto:{{ ref.email }}" class="text-decoration-none">
+                                            {{ ref.email }}
+                                        </a>
+                                    </td>
+                                    <td>{{ ref.relationship or '-' }}</td>
+                                    <td>
+                                        {% if ref.signed_up_user_id %}
+                                            <span class="badge bg-success" title="{{ ref.name }} - Signed up as: {{ ref.signed_up_username }}">
+                                                <i class="bi bi-check-circle"></i> Signed Up
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark" title="{{ ref.name }} - Not yet signed up">
+                                                <i class="bi bi-clock"></i> Pending
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="small text-muted">{{ ref.created_at[:10] if ref.created_at else '-' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('delete_referral', ref_id=ref.id) }}"
+                                           class="btn btn-sm btn-outline-danger"
+                                           onclick="return confirm('Delete referral for {{ ref.name }}? This cannot be undone.');"
+                                           title="Delete referral">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                            <p class="mb-0">No referrals yet. Start referring people above!</p>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('.badge[title]'))
+    var tooltipList = tooltipTriggerList.map(function (el) {
+        return new bootstrap.Tooltip(el)
+    })
+});
+</script>
+{% endblock %}

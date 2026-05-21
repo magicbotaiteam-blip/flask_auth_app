@@ -38,3 +38,11 @@ secrets.json
 site.db
 users.db
 venv/
+# Flask
+__pycache__/
+*.pyc
+instance/
+*.db
+venv/
+.DS_Store
+*.apk
