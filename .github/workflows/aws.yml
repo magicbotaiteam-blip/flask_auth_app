@@ -65,17 +65,20 @@ jobs:
           --services ${{ env.ECS_SERVICE }}
         echo "Deployment stable"
 
-    - name: Get Express Mode target group from service deployments
+    - name: Get active target group from Express Mode listener rules
       id: get-tg
       run: |
-        # In Express Mode, target groups are dynamically created per deployment.
-        # The target group ARN is available in the deployment's loadBalancers.
-        TG_ARN=$(aws ecs describe-services \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --services ${{ env.ECS_SERVICE }} \
-          --query 'services[0].deployments[0].loadBalancers[0].targetGroupArn' \
-          --output text)
-        echo "Target group ARN: $TG_ARN"
+        # Express Mode auto-manages listener rules and updates them on each
+        # deployment. List all HTTPS:443 rules, skip the default rule and
+        # our custom rule, then grab the SG ARN from the Express-managed rule.
+        LISTENER_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:listener/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b/6cf5a0b04ef7190f"
+        OUR_RULE_ARN="${{ env.LISTENER_RULE_ARN }}"
+        RULES=$(aws elbv2 describe-rules --listener-arn "$LISTENER_ARN" --output json)
+        TG_ARN=$(echo "$RULES" | jq -r \
+          --arg our_rule "$OUR_RULE_ARN" \
+          '.Rules[] | select(.Priority != "default") | select(.RuleArn != $our_rule) |
+          .Actions[0].ForwardConfig.TargetGroups[0].TargetGroupArn' | head -1)
+        echo "Express active target group ARN: $TG_ARN"
         echo "target_group_arn=$TG_ARN" >> $GITHUB_OUTPUT
 
     - name: Update listener rule for www.magicaibots.com
