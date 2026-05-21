@@ -105,6 +105,8 @@ def init_db_complete():
             username TEXT NOT NULL UNIQUE,
             email TEXT,
             password_hash TEXT,
+            referral_credits INTEGER DEFAULT 0,
+            referral_badge TEXT DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
@@ -164,11 +166,53 @@ def init_db_complete():
             email TEXT NOT NULL,
             relationship TEXT,
             signed_up_user_id INTEGER,
+            reward_given BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (referrer_user_id) REFERENCES users (id) ON DELETE CASCADE,
             FOREIGN KEY (signed_up_user_id) REFERENCES users (id) ON DELETE SET NULL
         )
     """)
+    
+    # Reward tiers table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS reward_tiers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            min_referrals INTEGER NOT NULL,
+            max_referrals INTEGER,
+            badge_name TEXT NOT NULL,
+            badge_icon TEXT NOT NULL,
+            credits_reward INTEGER DEFAULT 0,
+            description TEXT
+        )
+    """)
+    
+    # Reward redemptions table
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS reward_redemptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            reward_type TEXT NOT NULL,
+            credits_spent INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+        )
+    """)
+    
+    # Seed reward tiers
+    reward_tiers_data = [
+        (0, 0, 'Newcomer', '🌱', 0, 'Start referring friends to earn badges!'),
+        (1, 2, 'Helper', '🌟', 1, 'You referred your first person!'),
+        (3, 4, 'Contributor', '⭐', 3, '3 referrals — you are making an impact!'),
+        (5, 9, 'Advisor', '🏅', 5, '5 referrals — people trust your recommendations!'),
+        (10, 24, 'Champion', '🥇', 10, '10 referrals — you are a referral champion!'),
+        (25, 49, 'Ambassador', '👑', 25, '25 referrals — you are an ambassador!'),
+        (50, None, 'Legend', '💎', 50, '50 referrals — LEGENDARY status!'),
+    ]
+    conn.executemany(
+        "INSERT OR IGNORE INTO reward_tiers (min_referrals, max_referrals, badge_name, badge_icon, credits_reward, description) VALUES (?, ?, ?, ?, ?, ?)",
+        reward_tiers_data
+    )
     
     # Group collaboration tables (will be created by init_group_db)
     init_group_db()
@@ -662,6 +706,21 @@ def index():
                     WHERE email = ? AND signed_up_user_id IS NULL
                 """, (user["id"], user_info.get("email")))
                 
+                # Check if a referrer referred this user — reward them
+                referrer_id = session.pop('referrer_id', None)
+                if referrer_id:
+                    referrer = conn.execute("SELECT id FROM users WHERE id = ?", (referrer_id,)).fetchone()
+                    if referrer and referrer['id'] != user['id']:
+                        conn.execute(
+                            "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
+                            (referrer_id,)
+                        )
+                        conn.execute(
+                            "UPDATE referrals SET reward_given = TRUE WHERE referrer_user_id = ? AND email = ?",
+                            (referrer_id, user_info.get("email"))
+                        )
+                        print(f"[REFERRAL] Referrer {referrer_id} earned 1 credit for Google-signup {user_info.get('email')}")
+                
                 customer_role = conn.execute("SELECT id FROM roles WHERE name = 'customer'").fetchone()
                 conn.execute("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", (user["id"], customer_role["id"]))
                 conn.commit()
@@ -718,6 +777,17 @@ def index():
         LIMIT 5
     """, (user_id,)).fetchall()
     
+    # Referral stats
+    referral_credits = conn.execute(
+        "SELECT referral_credits FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+    referral_signed_up = conn.execute(
+        "SELECT COUNT(*) as cnt FROM referrals WHERE referrer_user_id = ? AND signed_up_user_id IS NOT NULL",
+        (user_id,)
+    ).fetchone()["cnt"]
+    referral_credits_val = referral_credits["referral_credits"] if referral_credits else 0
+    
     conn.close()
     
     role = session.get("role", "customer")
@@ -728,6 +798,8 @@ def index():
                          group_count=group_count,
                          recent_bots=recent_bots,
                          recent_groups=recent_groups,
+                         referral_credits=referral_credits_val,
+                         referral_signed_up=referral_signed_up,
                          google=HAS_GOOGLE_OAUTH,
                          role=role)
 
@@ -758,6 +830,10 @@ def debug_env():
 @app.route("/landing")
 def landing():
     """Public landing page — redirects logged-in users to their bots"""
+    # Capture referrer from URL parameter for Google OAuth users
+    ref_param = request.args.get('ref', '').strip()
+    if ref_param and ref_param.isdigit():
+        session['referrer_id'] = int(ref_param)
     if "user_id" in session:
         return redirect(url_for("my_bots"))
     return render_template("landing_with_groups.html", google=HAS_GOOGLE_OAUTH)
@@ -824,6 +900,11 @@ def signin_local():
 @app.route("/signup_local", methods=["GET", "POST"])
 def signup_local():
     """Local signup"""
+    # Capture referrer from URL parameter
+    ref_param = request.args.get('ref', '').strip()
+    if ref_param and ref_param.isdigit():
+        session['referrer_id'] = int(ref_param)
+    
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         email = request.form.get("email", "").strip()
@@ -931,6 +1012,26 @@ def signup_local():
                 UPDATE referrals SET signed_up_user_id = ?
                 WHERE email = ? AND signed_up_user_id IS NULL
             """, (user["id"], email))
+            
+            # Check if a referrer referred this user — reward them
+            referrer_id = session.pop('referrer_id', None)
+            if referrer_id:
+                referrer = conn.execute("SELECT id, referral_credits FROM users WHERE id = ?", (referrer_id,)).fetchone()
+                if referrer:
+                    # Check that the referrer didn't refer themselves
+                    if referrer['id'] != user['id']:
+                        # Grant 1 credit to referrer
+                        conn.execute(
+                            "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
+                            (referrer_id,)
+                        )
+                        # Mark this referral as rewarded
+                        conn.execute(
+                            "UPDATE referrals SET reward_given = TRUE WHERE referrer_user_id = ? AND email = ?",
+                            (referrer_id, email)
+                        )
+                        print(f"[REFERRAL] Referrer {referrer_id} earned 1 credit for referring {email}")
+                        flash('You were referred by a friend! Welcome! 🎉', 'success')
             
             customer_role = conn.execute("SELECT id FROM roles WHERE name = 'customer'").fetchone()
             conn.execute("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", (user["id"], customer_role["id"]))
@@ -1916,7 +2017,95 @@ def refresh_usage():
     )
     return f"<pre>stdout:\n{result.stdout}\nstderr:\n{result.stderr}</pre>"
 
-# ==================== Referrer Page ====================
+# ==================== Referral API — Share Link Info ====================
+
+@app.route("/api/referral/info")
+def api_referral_info():
+    """JSON endpoint with referral stats for the current user"""
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+    
+    user_id = session["user_id"]
+    conn = get_db_connection()
+    
+    user = conn.execute(
+        "SELECT id, username, referral_credits, referral_badge FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+    
+    signed_up_count = conn.execute(
+        "SELECT COUNT(*) as cnt FROM referrals WHERE referrer_user_id = ? AND signed_up_user_id IS NOT NULL",
+        (user_id,)
+    ).fetchone()["cnt"]
+    
+    # Determine current badge
+    badge = conn.execute(
+        "SELECT * FROM reward_tiers WHERE min_referrals <= ? AND (max_referrals IS NULL OR max_referrals >= ?) ORDER BY min_referrals DESC LIMIT 1",
+        (signed_up_count, signed_up_count)
+    ).fetchone()
+    
+    # Next tier
+    next_tier = conn.execute(
+        "SELECT * FROM reward_tiers WHERE min_referrals > ? ORDER BY min_referrals ASC LIMIT 1",
+        (signed_up_count,)
+    ).fetchone()
+    
+    conn.close()
+    
+    return jsonify({
+        "referral_link": f"{request.host_url.rstrip('/')}/signup_local?ref={user_id}",
+        "credits": user["referral_credits"],
+        "signed_up_referrals": signed_up_count,
+        "badge_name": badge["badge_name"] if badge else None,
+        "badge_icon": badge["badge_icon"] if badge else None,
+        "next_tier_name": next_tier["badge_name"] if next_tier else None,
+        "next_tier_icon": next_tier["badge_icon"] if next_tier else None,
+        "next_tier_min": next_tier["min_referrals"] if next_tier else None,
+        "next_tier_credits": next_tier["credits_reward"] if next_tier else None,
+    })
+
+
+# ==================== Referral Rewards — Redeem Credits ====================
+
+@app.route("/api/referral/redeem", methods=["POST"])
+def api_redeem_credits():
+    """Redeem referral credits for a reward"""
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+    
+    user_id = session["user_id"]
+    reward_type = request.json.get("reward_type", "")
+    cost = int(request.json.get("cost", 0))
+    
+    conn = get_db_connection()
+    user = conn.execute(
+        "SELECT referral_credits FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
+    
+    if not user:
+        conn.close()
+        return jsonify({"error": "User not found"}), 404
+    
+    if user["referral_credits"] < cost:
+        conn.close()
+        return jsonify({"error": "Not enough credits"}), 400
+    
+    conn.execute(
+        "UPDATE users SET referral_credits = referral_credits - ? WHERE id = ?",
+        (cost, user_id)
+    )
+    conn.execute(
+        "INSERT INTO reward_redemptions (user_id, reward_type, credits_spent, status) VALUES (?, ?, ?, 'completed')",
+        (user_id, reward_type, cost)
+    )
+    conn.commit()
+    conn.close()
+    
+    return jsonify({"success": True, "message": f"Redeemed {reward_type} for {cost} credits!"})
+
+
+# ==================== Referral Page ====================
 
 @app.route("/referrer", methods=["GET", "POST"])
 def referrer():
@@ -1926,6 +2115,12 @@ def referrer():
     user_id = session["user_id"]
     role = session.get("role", "customer")
     conn = get_db_connection()
+    
+    # Get user data
+    user = conn.execute(
+        "SELECT id, username, referral_credits, referral_badge FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()
     
     if request.method == "POST":
         name = request.form.get("name", "").strip()
@@ -1967,44 +2162,58 @@ def referrer():
                 )
                 conn.commit()
                 
-                # Send invitation email
-                try:
-                    import tempfile, subprocess
-                    app_url = request.host_url.rstrip('/')
-                    signup_link = f"{app_url}/signup_local"
-                    email_body = (
-                        f"Hi {name},\n\n"
-                        f"{your_name} has invited you to join Magic Bot AI — an intelligent automation platform "
-                        f"that helps you create and manage AI-powered bots with ease.\n\n"
-                        f"Whether you need to automate repetitive tasks, build intelligent chatbots, "
-                        f"or streamline your workflow, Magic Bot AI makes it simple and powerful.\n\n"
-                        f"Join {your_name} and start your journey today:\n"
-                        f"{signup_link}\n\n"
-                        f"We look forward to seeing what you'll create!\n\n"
-                        f"Warmly,\n"
-                        f"The Magic Bot AI Team"
+                # If the referred user already exists, immediately reward the referrer
+                if signed_up_user_id and signed_up_user_id != user_id:
+                    conn.execute(
+                        "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
+                        (user_id,)
                     )
-                    with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
-                        f.write(email_body)
-                        temp_path = f.name
-                    result = subprocess.run(
-                        ["gog", "mail", "send",
-                         "--to", email,
-                         "--subject", f"{your_name} has invited you to join Magic Bot AI!",
-                         "--body-file", temp_path,
-                         "--account", "chingtshenbot@gmail.com"],
-                        capture_output=True, text=True, timeout=30
+                    conn.execute(
+                        "UPDATE referrals SET reward_given = TRUE WHERE referrer_user_id = ? AND email = ?",
+                        (user_id, email)
                     )
-                    os.unlink(temp_path)
-                    if result.returncode == 0:
-                        print(f"[REFERRAL] Invitation email sent to {email}")
-                    else:
-                        print(f"[REFERRAL] Failed to send email to {email}: {result.stderr}")
-                except Exception as e:
-                    print(f"[REFERRAL] Email send error for {email}: {e}")
-                
-                flash(f"{name} has been referred successfully! An invitation email has been sent.", "success")
+                    conn.commit()
+                    flash(f"{name} is already a member! You earned 1 credit! 🎉", "success")
+                else:
+                    # Send invitation email
+                    try:
+                        import tempfile, subprocess
+                        app_url = request.host_url.rstrip('/')
+                        signup_link = f"{app_url}/signup_local?ref={user_id}"
+                        email_body = (
+                            f"Hi {name},\n\n"
+                            f"{your_name} has invited you to join Magic Bot AI — an intelligent automation platform "
+                            f"that helps you create and manage AI-powered bots with ease.\n\n"
+                            f"Whether you need to automate repetitive tasks, build intelligent chatbots, "
+                            f"or streamline your workflow, Magic Bot AI makes it simple and powerful.\n\n"
+                            f"Join {your_name} and start your journey today:\n"
+                            f"{signup_link}\n\n"
+                            f"We look forward to seeing what you'll create!\n\n"
+                            f"Warmly,\n"
+                            f"The Magic Bot AI Team"
+                        )
+                        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+                            f.write(email_body)
+                            temp_path = f.name
+                        result = subprocess.run(
+                            ["gog", "mail", "send",
+                             "--to", email,
+                             "--subject", f"{your_name} has invited you to join Magic Bot AI!",
+                             "--body-file", temp_path,
+                             "--account", "chingtshenbot@gmail.com"],
+                            capture_output=True, text=True, timeout=30
+                        )
+                        os.unlink(temp_path)
+                        if result.returncode == 0:
+                            print(f"[REFERRAL] Invitation email sent to {email}")
+                        else:
+                            print(f"[REFERRAL] Failed to send email to {email}: {result.stderr}")
+                    except Exception as e:
+                        print(f"[REFERRAL] Email send error for {email}: {e}")
+                    
+                    flash(f"{name} has been referred successfully! An invitation email has been sent.", "success")
     
+    # Get referrals list
     if role == "admin":
         referrals = conn.execute("""
             SELECT r.*, u.username as referrer_username
@@ -2025,6 +2234,47 @@ def referrer():
     total_referred = len(referrals)
     pending_count = sum(1 for ref in referrals if ref["signed_up_user_id"] is None)
     signed_up_count = sum(1 for ref in referrals if ref["signed_up_user_id"] is not None)
+    credits = user["referral_credits"] if user else 0
+    
+    # Get current badge tier
+    current_tier = conn.execute(
+        "SELECT * FROM reward_tiers WHERE min_referrals <= ? AND (max_referrals IS NULL OR max_referrals >= ?) ORDER BY min_referrals DESC LIMIT 1",
+        (signed_up_count, signed_up_count)
+    ).fetchone()
+    
+    # Get next tier
+    next_tier = conn.execute(
+        "SELECT * FROM reward_tiers WHERE min_referrals > ? ORDER BY min_referrals ASC LIMIT 1",
+        (signed_up_count,)
+    ).fetchone()
+    
+    # Get all tiers for display
+    all_tiers = conn.execute(
+        "SELECT * FROM reward_tiers ORDER BY min_referrals ASC"
+    ).fetchall()
+    
+    # Calculate progress to next tier
+    progress_pct = 100
+    next_tier_name = None
+    next_tier_icon = None
+    if next_tier:
+        current_min = current_tier["min_referrals"] if current_tier else 0
+        next_min = next_tier["min_referrals"]
+        range_size = next_min - current_min
+        if range_size > 0:
+            progress_pct = min(100, int((signed_up_count - current_min) / range_size * 100))
+        next_tier_name = next_tier["badge_name"]
+        next_tier_icon = next_tier["badge_icon"]
+    
+    # Get reward redemption history
+    redemptions = conn.execute(
+        "SELECT * FROM reward_redemptions WHERE user_id = ? ORDER BY created_at DESC LIMIT 10",
+        (user_id,)
+    ).fetchall()
+    
+    # Build referral link with ref parameter
+    referral_link = f"{request.host_url.rstrip('/')}/signup_local?ref={user_id}"
+    
     conn.close()
     
     return render_template("referrer.html",
@@ -2032,6 +2282,15 @@ def referrer():
                            total_referred=total_referred,
                            pending_count=pending_count,
                            signed_up_count=signed_up_count,
+                           credits=credits,
+                           badge_name=current_tier["badge_name"] if current_tier else "Newcomer",
+                           badge_icon=current_tier["badge_icon"] if current_tier else "🌱",
+                           next_tier_name=next_tier_name,
+                           next_tier_icon=next_tier_icon,
+                           progress_pct=progress_pct,
+                           all_tiers=all_tiers,
+                           redemptions=redemptions,
+                           referral_link=referral_link,
                            username=session.get("username"),
                            role=role)
 
