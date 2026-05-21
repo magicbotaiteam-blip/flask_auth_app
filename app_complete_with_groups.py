@@ -582,6 +582,26 @@ def update_contact_status(contact_id):
             "message": "An error occurred"
         }), 500
 
+@app.route("/legal/privacy")
+def legal_privacy():
+    return render_template("legal.html", page="privacy")
+
+
+@app.route("/legal/terms")
+def legal_terms():
+    return render_template("legal.html", page="terms")
+
+
+@app.route("/legal/cookies")
+def legal_cookies():
+    return render_template("legal.html", page="cookies")
+
+
+@app.route("/legal/gdpr")
+def legal_gdpr():
+    return render_template("legal.html", page="gdpr")
+
+
 @app.route("/")
 def index():
     """Main dashboard"""
