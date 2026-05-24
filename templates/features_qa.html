@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Q&A - AI Magic Bot Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        .qa-section {
+            padding: 40px 0;
+        }
+        .qa-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+            border: 1px solid rgba(0,0,0,0.04);
+            transition: box-shadow 0.2s ease, transform 0.2s ease;
+            cursor: pointer;
+        }
+        .qa-card:hover {
+            box-shadow: 0 6px 24px rgba(0,0,0,0.10);
+            transform: translateY(-1px);
+        }
+        .qa-card .question {
+            font-weight: 600;
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+        }
+        .qa-card .question i {
+            font-size: 1.3rem;
+            margin-right: 12px;
+            color: var(--primary-color);
+        }
+        .qa-card .answer {
+            color: #444;
+            line-height: 1.7;
+            padding-left: 36px;
+            margin-top: 8px;
+        }
+        .qa-card .answer p {
+            margin-bottom: 8px;
+        }
+        .qa-card .answer ul {
+            padding-left: 20px;
+            margin-bottom: 8px;
+        }
+        .qa-card .answer li {
+            margin-bottom: 4px;
+        }
+        .qa-highlight {
+            border-left: 4px solid var(--primary-color);
+            background: linear-gradient(135deg, rgba(99,102,241,0.04) 0%, rgba(139,92,246,0.04) 100%);
+        }
+        .qa-category-badge {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            margin-left: 12px;
+            background: var(--primary-color);
+            color: white;
+            opacity: 0.85;
+        }
+    </style>
+</head>
+<body>
+    {% include '_navbar_public.html' %}
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold mb-4">Frequently Asked Questions</h1>
+                    <p class="lead mb-4">Everything you need to know about AI-powered bots, OpenClaw, and the AI Magic Bot Platform</p>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <i class="bi bi-question-circle" style="font-size: 120px; opacity: 0.8;"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Q&A List -->
+    <section class="qa-section py-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 mx-auto">
+                    
+                    <!-- === OpenClaw vs ChatGPT (Top) === -->
+                    <div class="qa-card qa-highlight">
+                        <div class="question">
+                            <i class="bi bi-chat-dots"></i>
+                            What are the differences between ChatGPT and OpenClaw?
+                            <span class="qa-category-badge">Top Question</span>
+                        </div>
+                        <div class="answer">
+                            <p><strong>ChatGPT</strong> is a conversational AI chatbot developed by OpenAI. It's designed to answer questions, generate text, assist with writing, and hold natural conversations. You interact with it through a web browser or mobile app.</p>
+                            <p><strong>OpenClaw</strong> is a personal AI agent platform that lives on your own machine. It's not just a chatbot — it's an autonomous agent that can:</p>
+                            <ul>
+                                <li><strong>Take real actions:</strong> Send emails, manage files, browse the web, control apps, and execute code on your behalf</li>
+                                <li><strong>Persist and remember:</strong> Maintain memory across sessions with daily logs and long-term memory files</li>
+                                <li><strong>Use tools:</strong> Access your calendar, search the web, generate images, create videos, and interact with APIs</li>
+                                <li><strong>Work autonomously:</strong> Run scheduled tasks, monitor inboxes, and execute multi-step workflows without constant prompting</li>
+                                <li><strong>Stay private:</strong> Runs locally — your data stays on your machine, not sent to a cloud provider</li>
+                            </ul>
+                            <p><strong>In short:</strong> ChatGPT is a conversation tool. OpenClaw is an AI agent platform that acts on your behalf.</p>
+                        </div>
+                    </div>
+
+                    <!-- === AI Magic Bot Platform === -->
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-robot"></i>
+                            What is the AI Magic Bot Platform?
+                        </div>
+                        <div class="answer">
+                            <p>The AI Magic Bot Platform is a comprehensive web application for creating, managing, and deploying AI-powered bots across multiple messaging platforms. Built on top of OpenClaw's agent infrastructure, it provides:</p>
+                            <ul>
+                                <li>A central dashboard to register and configure bots</li>
+                                <li>Integration with leading LLM providers (GPT, Claude, Gemini, etc.)</li>
+                                <li>Multi-platform messaging support (Telegram, Discord, WhatsApp, etc.)</li>
+                                <li>Team collaboration with role-based access control</li>
+                                <li>Analytics and usage tracking for every bot</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-shield-check"></i>
+                            How does the platform protect my privacy?
+                        </div>
+                        <div class="answer">
+                            <p>Privacy is a core principle. Here's how we protect you:</p>
+                            <ul>
+                                <li><strong>Never grant bots access to your personal inbox.</strong> Use a dedicated email for bot notifications</li>
+                                <li>All bot tokens are encrypted at rest in the database</li>
+                                <li>Your chat history with bots is stored securely and never shared with third parties</li>
+                                <li>Role-based access ensures only authorized team members can manage bots</li>
+                                <li>Session-based authentication with secure password hashing (SHA-256)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-plug"></i>
+                            Which messaging platforms are supported?
+                        </div>
+                        <div class="answer">
+                            <p>Our platform currently supports the following messaging platforms:</p>
+                            <ul>
+                                <li><strong>Telegram</strong> — Full bot API support with webhook integration</li>
+                                <li><strong>Discord</strong> — Slash commands, embeds, and channel management</li>
+                                <li><strong>Slack</strong> — App manifests and interactive messages</li>
+                                <li><strong>WhatsApp</strong> — Business API for customer communication</li>
+                                <li><strong>Custom Webhooks</strong> — Generic HTTP/webhook integration for any platform</li>
+                            </ul>
+                            <p>Adding a bot to a new platform only takes a few clicks from the registration form.</p>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-people"></i>
+                            Can I collaborate with my team on bots?
+                        </div>
+                        <div class="answer">
+                            <p>Absolutely! The platform includes full team collaboration features:</p>
+                            <ul>
+                                <li><strong>Groups:</strong> Create teams and invite members to collaborate on bots</li>
+                                <li><strong>Roles:</strong> Assign admin or customer roles with different permission levels</li>
+                                <li><strong>Shared Ownership:</strong> Bots can be owned and managed by a group, not just an individual</li>
+                                <li><strong>Audit Trail:</strong> Track who made changes to bot configurations</li>
+                            </ul>
+                            <p>This makes it ideal for agencies, dev teams, and organizations that need to manage bots collectively.</p>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-currency-dollar"></i>
+                            How does pricing work?
+                        </div>
+                        <div class="answer">
+                            <p>We offer flexible pricing tiers to suit different needs:</p>
+                            <ul>
+                                <li><strong>Free Tier:</strong> Create up to 3 bots, basic analytics, single user access</li>
+                                <li><strong>Pro Tier:</strong> Unlimited bots, advanced analytics, team collaboration, priority support</li>
+                                <li><strong>Enterprise Tier:</strong> Custom integrations, dedicated support, SLA guarantees, on-premise deployment</li>
+                            </ul>
+                            <p>Visit our <a href="/pricing">Pricing page</a> for detailed information on each tier.</p>
+                        </div>
+                    </div>
+
+                    <!-- === AI & AI Agent Questions === -->
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-cpu"></i>
+                            What is an AI agent and how is it different from a standard bot?
+                        </div>
+                        <div class="answer">
+                            <p>An <strong>AI agent</strong> is an autonomous software entity that can perceive its environment, make decisions, and take actions to achieve specific goals — without requiring step-by-step human instructions. Key differences from a standard bot:</p>
+                            <ul>
+                                <li><strong>Proactivity:</strong> Agents can initiate actions (e.g., "check email every hour and flag urgent messages"), while bots only respond to commands</li>
+                                <li><strong>Tool Use:</strong> Agents can use external tools — browse the web, run code, query databases, send messages — to accomplish tasks</li>
+                                <li><strong>Memory:</strong> Agents maintain context across sessions and can learn from past interactions</li>
+                                <li><strong>Reasoning:</strong> Agents can break complex goals into sub-steps and adapt their approach when things go wrong</li>
+                                <li><strong>Autonomy:</strong> Once given a goal, agents work toward it with minimal supervision</li>
+                            </ul>
+                            <p>In the AI Magic Bot Platform, every bot you create can be configured to run as a standard reactive bot or as a proactive AI agent.</p>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-graph-up-arrow"></i>
+                            How does the platform handle bot scaling and performance?
+                        </div>
+                        <div class="answer">
+                            <p>The platform is built for scale from the ground up:</p>
+                            <ul>
+                                <li><strong>Asynchronous Processing:</strong> Bot message handling uses async workers to prevent blocking</li>
+                                <li><strong>SQLite with Connection Pooling:</strong> Efficient database access with proper locking mechanisms</li>
+                                <li><strong>Rate Limiting:</strong> Built-in rate limiting prevents abuse and ensures fair resource allocation</li>
+                                <li><strong>Caching:</strong> Frequently accessed data (bot configs, user sessions) is cached for fast retrieval</li>
+                                <li><strong>24/7 Availability:</strong> The platform is designed for continuous operation with automatic reconnection to messaging APIs</li>
+                            </ul>
+                            <p>For high-volume deployments, we recommend the Enterprise tier which includes dedicated infrastructure options.</p>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-shield-lock"></i>
+                            What security measures are in place to protect bots and user data?
+                        </div>
+                        <div class="answer">
+                            <p>Security is multi-layered and follows industry best practices:</p>
+                            <ul>
+                                <li><strong>Authentication:</strong> Password hashing with SHA-256 + salt, OAuth 2.0 (Google Sign-In), session management with secure cookies</li>
+                                <li><strong>Authorization:</strong> Role-based access control (Admin / Customer roles) with granular permissions per bot and group</li>
+                                <li><strong>Data Protection:</strong> Bot tokens encrypted at rest, HTTPS enforced in production, no plaintext secrets in the database</li>
+                                <li><strong>Input Validation:</strong> All user inputs sanitized against XSS and SQL injection attacks</li>
+                                <li><strong>Audit Logging:</strong> All admin actions and bot modifications are logged with timestamps and user IDs</li>
+                                <li><strong>Email Security:</strong> For security reasons, never grant bots access to your personal inbox — use a dedicated notification email</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-gear"></i>
+                            Can I integrate the platform with my existing tools and services?
+                        </div>
+                        <div class="answer">
+                            <p>Yes! The platform supports several integration points:</p>
+                            <ul>
+                                <li><strong>Webhook API:</strong> Send and receive data from any external service via HTTP webhooks</li>
+                                <li><strong>REST API:</strong> Programmatic access to bot management, analytics, and user administration</li>
+                                <li><strong>Zapier / IFTTT:</strong> Connect with thousands of apps through no-code automation platforms</li>
+                                <li><strong>Custom Scripts:</strong> Bot actions can trigger custom Python scripts for advanced automation</li>
+                                <li><strong>Database Access:</strong> Direct SQLite access for custom reporting and data analysis (admin only)</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-clock-history"></i>
+                            What happens if my bot goes offline or loses connection?
+                        </div>
+                        <div class="answer">
+                            <p>The platform has built-in resilience for connection issues:</p>
+                            <ul>
+                                <li><strong>Auto-reconnect:</strong> Bots automatically attempt to reconnect with exponential backoff when they lose connection to a messaging platform</li>
+                                <li><strong>Message Queue:</strong> Incoming messages are queued during downtime and processed once the bot reconnects</li>
+                                <li><strong>Health Monitoring:</strong> The dashboard shows real-time connection status for every bot</li>
+                                <li><strong>Alert System:</strong> You can configure email alerts for when a bot goes offline</li>
+                                <li><strong>Crash Recovery:</strong> Bot state is persisted to the database, so crashes don't lose configuration</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="qa-card">
+                        <div class="question">
+                            <i class="bi bi-code-slash"></i>
+                            Do I need programming experience to use this platform?
+                        </div>
+                        <div class="answer">
+                            <p><strong>Not at all.</strong> The AI Magic Bot Platform is designed for both technical and non-technical users:</p>
+                            <ul>
+                                <li><strong>No-code setup:</strong> Register and configure bots entirely through the web interface — no coding required</li>
+                                <li><strong>Visual editors:</strong> Configure bot behavior, responses, and triggers through intuitive forms</li>
+                                <li><strong>Template library:</strong> Start from pre-built bot templates for common use cases (customer support, FAQ, notifications)</li>
+                                <li><strong>For developers:</strong> Advanced users can write custom logic, create complex workflows, and extend bot capabilities via Python scripts</li>
+                            </ul>
+                            <p>If you can fill out a web form, you can create and deploy a bot in minutes.</p>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-5" style="background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%); color: white;">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h2 class="mb-3">Still Have Questions?</h2>
+                    <p class="lead mb-0">Get in touch — our team is ready to help you with anything.</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a href="/advertisement#contact" class="btn btn-light btn-lg">
+                        <i class="bi bi-envelope"></i> Contact Us
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5><i class="bi bi-robot"></i> AI Magic Bot</h5>
+                    <p class="text-muted">The complete platform for bot management and collaboration.</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="text-muted mb-0">&copy; 2025 AI Magic Bot. All rights reserved.</p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'))
+            var dropdownList = dropdownElementList.map(function (dropdownToggleEl) {
+                return new bootstrap.Dropdown(dropdownToggleEl)
+            })
+        });
+    </script>
+</body>
+</html>

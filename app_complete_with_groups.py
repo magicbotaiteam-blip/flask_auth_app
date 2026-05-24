@@ -442,6 +442,11 @@ def features_how_to_start():
     """How to start guide page"""
     return render_template("features_how_to_start.html")
 
+@app.route("/features/qa")
+def features_qa():
+    """Q&A page"""
+    return render_template("features_qa.html")
+
 @app.route("/pricing")
 def pricing():
     """Pricing page"""
