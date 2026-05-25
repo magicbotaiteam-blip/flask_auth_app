@@ -2337,6 +2337,97 @@ def referrer():
                            role=role)
 
 
+# ==================== File Upload REST API ====================
+
+import uuid
+
+
+@app.route("/api/upload", methods=["POST"])
+@login_required_api
+def api_upload_files():
+    """
+    REST API: Upload files to a caller-specified folder (relative to app root).
+
+    POST /api/upload
+    Content-Type: multipart/form-data
+
+    Form fields:
+      - folder (required): Relative path from the application root directory
+      - files (required): One or more file attachments
+
+    Returns:
+      JSON with uploaded file details or error message.
+
+    Security:
+      - Path traversal is blocked (folder must resolve inside app root).
+      - Existing files are overwritten silently.
+      - Non-file form fields are ignored.
+    """
+    home_dir = Path.home().resolve()
+
+    # --- Validate `folder` parameter ---
+    folder_param = request.form.get("folder", "").strip()
+    if not folder_param:
+        return jsonify({"error": "Missing required field: 'folder'"}), 400
+
+    # Resolve and sanitize the target path (relative to home directory)
+    target = (home_dir / folder_param).resolve()
+
+    try:
+        target.relative_to(home_dir)
+    except ValueError:
+        return jsonify({"error": "Path traversal is not allowed. Folder must resolve to a path inside your home directory."}), 400
+
+    # --- Validate files ---
+    if "files" not in request.files:
+        return jsonify({"error": "Missing required field: 'files' (multipart file upload)"}), 400
+
+    uploaded_files = request.files.getlist("files")
+    if not uploaded_files or all(f.filename == "" for f in uploaded_files):
+        return jsonify({"error": "No files provided or all filenames are empty."}), 400
+
+    # --- Create target directory if it does not exist ---
+    target.mkdir(parents=True, exist_ok=True)
+
+    # --- Save files ---
+    results = []
+    errors = []
+
+    for file_storage in uploaded_files:
+        filename = file_storage.filename
+        if not filename:
+            continue
+
+        # Sanitize filename: strip path separators to prevent traversal via filename
+        safe_filename = Path(filename).name
+        dest_path = target / safe_filename
+
+        try:
+            file_storage.save(str(dest_path))
+            results.append({
+                "filename": safe_filename,
+                "size": dest_path.stat().st_size,
+                "path": str(dest_path),
+                "folder": folder_param,
+            })
+        except Exception as e:
+            errors.append({"filename": safe_filename, "error": str(e)})
+
+    # --- Build response ---
+    response = {
+        "uploaded": results,
+        "total_uploaded": len(results),
+        "folder": folder_param,
+        "absolute_folder": str(target),
+    }
+    if errors:
+        response["errors"] = errors
+        response["total_errors"] = len(errors)
+
+    status_code = 200 if results else 400
+    return jsonify(response), status_code
+
+
 # ==================== Delete Referral ====================
 
 @app.route("/referrer/delete/<int:ref_id>")
