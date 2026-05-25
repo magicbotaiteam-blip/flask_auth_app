@@ -46,6 +46,7 @@ jobs:
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
     - name: Force new ECS deployment
+      id: deploy
       run: |
         aws ecs update-service \
           --cluster ${{ env.ECS_CLUSTER }} \
@@ -53,3 +54,69 @@ jobs:
           --force-new-deployment \
           --no-cli-pager
         echo "Force new deployment triggered (Express Mode will auto-pick up latest image)"
+
+    - name: Wait for deployment to stabilize
+      run: |
+        echo "Waiting for ECS deployment to complete..."
+        aws ecs wait services-stable \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --no-cli-pager
+        echo "Deployment stable."
+
+    - name: Update ALB listener rule to correct target group
+      run: |
+        ALB_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:loadbalancer/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b"
+        CORRECT_TG_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:targetgroup/ecs-gateway-tg-747807c47cdd4471c/dbde0c33289ccfdc"
+        LISTENER_PORT=443
+
+        echo "Fetching listener ARN for port $LISTENER_PORT..."
+        LISTENER_ARN=$(aws elbv2 describe-listeners \
+          --load-balancer-arn "$ALB_ARN" \
+          --query "Listeners[?Port==\`$LISTENER_PORT\`].ListenerArn" \
+          --output text \
+          --no-cli-pager)
+
+        echo "Listener ARN: $LISTENER_ARN"
+
+        echo "Fetching current listener rules..."
+        RULES=$(aws elbv2 describe-rules \
+          --listener-arn "$LISTENER_ARN" \
+          --no-cli-pager)
+
+        # Find the rule for www.magicaibots.com
+        RULE_ARN=$(echo "$RULES" | jq -r '.Rules[] | select(.Priority != "default") | select(.Conditions[]? | select(.Field == "host-header") | .Values[] | contains("magicaibots.com")) | .RuleArn' | head -1)
+
+        if [ -z "$RULE_ARN" ] || [ "$RULE_ARN" = "null" ]; then
+          echo "WARNING: Could not find listener rule for magicaibots.com. Skipping rule update."
+          echo "Current rules:"
+          echo "$RULES" | jq '.Rules[] | {priority: .Priority, conditions: .Conditions}' 2>/dev/null || echo "$RULES"
+        else
+          echo "Found rule: $RULE_ARN"
+          
+          # Update the rule to forward to the correct target group
+          aws elbv2 modify-rule \
+            --rule-arn "$RULE_ARN" \
+            --actions "[{\"Type\": \"forward\", \"ForwardConfig\": {\"TargetGroups\": [{\"TargetGroupArn\": \"$CORRECT_TG_ARN\", \"Weight\": 100}]}}]" \
+            --no-cli-pager
+          
+          echo "✅ Listener rule updated to forward to the correct target group."
+        fi
+
+    - name: Delete old stale target groups (no registered targets)
+      run: |
+        echo "Cleaning up stale target groups..."
+        STALE_TGS=$(aws elbv2 describe-target-groups \
+          --load-balancer-arn "arn:aws:elasticloadbalancing:us-east-1:404006608636:loadbalancer/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b" \
+          --query "TargetGroups[?TargetGroupName!='ecs-gateway-tg-747807c47cdd4471c'].TargetGroupArn" \
+          --output text \
+          --no-cli-pager)
+        
+        for TG in $STALE_TGS; do
+          TARGETS=$(aws elbv2 describe-target-health --target-group-arn "$TG" --query 'TargetHealthDescriptions[].Target.Id' --output text --no-cli-pager 2>/dev/null || echo "none")
+          if [ -z "$TARGETS" ] || [ "$TARGETS" = "none" ]; then
+            echo "Deleting stale target group: $TG"
+            aws elbv2 delete-target-group --target-group-arn "$TG" --no-cli-pager 2>/dev/null || echo "Could not delete $TG (may be in use)"
+          fi
+        done
+        echo "Cleanup complete."
