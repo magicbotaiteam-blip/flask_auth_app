@@ -85,11 +85,18 @@ def init_db():
             llm TEXT,
             token TEXT NOT NULL,
             description TEXT,
+            online BOOLEAN NOT NULL DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
         )
     """)
+    
+    # Add online column if it doesn't exist (for databases already created)
+    try:
+        conn.execute("ALTER TABLE bots ADD COLUMN online BOOLEAN NOT NULL DEFAULT 0")
+    except:
+        pass  # Column already exists
     
     # Create referrals table if it doesn't exist
     conn.execute("""
@@ -228,6 +235,7 @@ def save_bot():
     llm = request.form.get("llm")
     token = request.form.get("token")
     description = request.form.get("description")
+    online = 1 if request.form.get("online") == "1" else 0
     
     if not name:
         flash("Bot Name is required.")
@@ -260,21 +268,21 @@ def save_bot():
         if role == "admin":
             conn.execute("""
                 UPDATE bots 
-                SET name = ?, email = ?, organization = ?, messaging = ?, llm = ?, token = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+                SET name = ?, email = ?, organization = ?, messaging = ?, llm = ?, token = ?, description = ?, online = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
-            """, (name, email, organization, messaging, llm, token, description, bot_id))
+            """, (name, email, organization, messaging, llm, token, description, online, bot_id))
         else:
             conn.execute("""
                 UPDATE bots 
-                SET name = ?, email = ?, organization = ?, messaging = ?, llm = ?, token = ?, description = ?, updated_at = CURRENT_TIMESTAMP
+                SET name = ?, email = ?, organization = ?, messaging = ?, llm = ?, token = ?, description = ?, online = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND user_id = ?
-            """, (name, email, organization, messaging, llm, token, description, bot_id, user_id))
+            """, (name, email, organization, messaging, llm, token, description, online, bot_id, user_id))
         flash("Bot updated successfully!")
     else:  # Create new bot
         conn.execute("""
-            INSERT INTO bots (user_id, name, email, organization, messaging, llm, token, description)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        """, (user_id, name, email, organization, messaging, llm, token, description))
+            INSERT INTO bots (user_id, name, email, organization, messaging, llm, token, description, online)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (user_id, name, email, organization, messaging, llm, token, description, online))
         flash("Bot created successfully!")
     
     conn.commit()
