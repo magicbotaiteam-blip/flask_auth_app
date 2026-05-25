@@ -22,6 +22,10 @@ ENV GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
 ENV OAUTHLIB_INSECURE_TRANSPORT=false
 ENV SKIP_DOTENV=1
 
+# S3 bucket for persistent file storage
+ARG S3_BUCKET_NAME=flask-auth-app-uploads
+ENV S3_BUCKET_NAME=$S3_BUCKET_NAME
+
 # Expose port 80 (Express Mode ALB expects port 80)
 EXPOSE 80
 

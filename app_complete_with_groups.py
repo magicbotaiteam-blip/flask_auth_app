@@ -13,6 +13,24 @@ import json
 from datetime import datetime
 from functools import wraps
 from dotenv import load_dotenv
+import io
+
+# S3 storage (optional, for production)
+S3_BUCKET = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
+S3_ENABLED = bool(os.environ.get("S3_BUCKET_NAME")) or os.path.exists("/.dockerenv")
+
+s3_client = None
+if S3_ENABLED:
+    try:
+        import boto3
+        s3_client = boto3.client("s3", region_name="us-east-1")
+        # Verify bucket exists / is accessible
+        s3_client.head_bucket(Bucket=S3_BUCKET)
+        print(f"S3 storage enabled: bucket={S3_BUCKET}")
+    except Exception as e:
+        print(f"S3 storage not available, falling back to local filesystem: {e}")
+        S3_ENABLED = False
+        s3_client = None
 
 # Load .env file for local dev (silently ignore if not present, e.g. in Docker)
 # Skip in production when env vars are set via build args or system env.
@@ -2356,39 +2374,25 @@ import uuid
 @login_required_api
 def api_upload_files():
     """
-    REST API: Upload files to a caller-specified folder (relative to app root).
+    REST API: Upload files to a caller-specified folder.
 
     POST /api/upload
     Content-Type: multipart/form-data
 
     Form fields:
-      - folder (required): Relative path from the application root directory
+      - folder (required): Relative path (acts as S3 prefix on ECS, path on local)
       - files (required): One or more file attachments
 
     Returns:
       JSON with uploaded file details or error message.
 
-    Security:
-      - Path traversal is blocked (folder must resolve inside app root).
-      - Existing files are overwritten silently.
-      - Non-file form fields are ignored.
+    On ECS (production): files are uploaded to S3 bucket.
+    Locally: files are saved to ~/folder_param.
     """
-    home_dir = Path.home().resolve()
-
-    # --- Validate `folder` parameter ---
     folder_param = request.form.get("folder", "").strip()
     if not folder_param:
         return jsonify({"error": "Missing required field: 'folder'"}), 400
 
-    # Resolve and sanitize the target path (relative to home directory)
-    target = (home_dir / folder_param).resolve()
-
-    try:
-        target.relative_to(home_dir)
-    except ValueError:
-        return jsonify({"error": "Path traversal is not allowed. Folder must resolve to a path inside your home directory."}), 400
-
-    # --- Validate files ---
     if "files" not in request.files:
         return jsonify({"error": "Missing required field: 'files' (multipart file upload)"}), 400
 
@@ -2396,10 +2400,6 @@ def api_upload_files():
     if not uploaded_files or all(f.filename == "" for f in uploaded_files):
         return jsonify({"error": "No files provided or all filenames are empty."}), 400
 
-    # --- Create target directory if it does not exist ---
-    target.mkdir(parents=True, exist_ok=True)
-
-    # --- Save files ---
     results = []
     errors = []
 
@@ -2408,27 +2408,54 @@ def api_upload_files():
         if not filename:
             continue
 
-        # Sanitize filename: strip path separators to prevent traversal via filename
         safe_filename = Path(filename).name
-        dest_path = target / safe_filename
+        s3_key = f"{folder_param}/{safe_filename}" if folder_param else safe_filename
 
         try:
-            file_storage.save(str(dest_path))
-            results.append({
-                "filename": safe_filename,
-                "size": dest_path.stat().st_size,
-                "path": str(dest_path),
-                "folder": folder_param,
-            })
+            if S3_ENABLED and s3_client:
+                # Upload to S3
+                file_bytes = file_storage.read()
+                s3_client.put_object(
+                    Bucket=S3_BUCKET,
+                    Key=s3_key,
+                    Body=file_bytes,
+                    ContentType=file_storage.content_type or "application/octet-stream",
+                )
+                results.append({
+                    "filename": safe_filename,
+                    "size": len(file_bytes),
+                    "s3_key": s3_key,
+                    "s3_bucket": S3_BUCKET,
+                    "folder": folder_param,
+                    "storage": "s3",
+                })
+            else:
+                # Local filesystem (dev mode)
+                home_dir = Path.home().resolve()
+                target = (home_dir / folder_param).resolve()
+                try:
+                    target.relative_to(home_dir)
+                except ValueError:
+                    errors.append({"filename": safe_filename, "error": "Path traversal is not allowed."})
+                    continue
+                target.mkdir(parents=True, exist_ok=True)
+                dest_path = target / safe_filename
+                file_storage.seek(0)
+                file_storage.save(str(dest_path))
+                results.append({
+                    "filename": safe_filename,
+                    "size": dest_path.stat().st_size,
+                    "path": str(dest_path),
+                    "folder": folder_param,
+                    "storage": "local",
+                })
         except Exception as e:
             errors.append({"filename": safe_filename, "error": str(e)})
 
-    # --- Build response ---
     response = {
         "uploaded": results,
         "total_uploaded": len(results),
         "folder": folder_param,
-        "absolute_folder": str(target),
     }
     if errors:
         response["errors"] = errors
