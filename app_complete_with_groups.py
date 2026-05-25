@@ -126,6 +126,7 @@ def init_db_complete():
             llm TEXT,
             description TEXT,
             is_active BOOLEAN DEFAULT TRUE,
+            online INTEGER DEFAULT 0,
             last_used TIMESTAMP,
             usage_count INTEGER DEFAULT 0,
             config TEXT,
@@ -136,6 +137,14 @@ def init_db_complete():
             FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
         )
     """)
+    
+    # Add online column if it doesn't exist (for existing databases)
+    try:
+        conn.execute("ALTER TABLE bots ADD COLUMN online INTEGER DEFAULT 0")
+        conn.execute("UPDATE bots SET online = 0 WHERE online IS NULL")
+        conn.commit()
+    except:
+        pass
     
     conn.execute("""
         CREATE TABLE IF NOT EXISTS roles (
@@ -1451,7 +1460,8 @@ def save_bot():
         'webhook_url': request.form.get("webhook_url", ""),
         'api_key': request.form.get("api_key", ""),
         'tags': request.form.get("tags", ""),
-        'file_folder': request.form.get("file_folder", "")
+        'file_folder': request.form.get("file_folder", ""),
+        'online': 1 if request.form.get("online") == "1" else 0
     }
     
     if not form_data['name']:
@@ -1502,29 +1512,29 @@ def save_bot():
             conn.execute("""
                 UPDATE bots 
                 SET name = ?, email = ?, organization = ?, messaging = ?, llm = ?, token = ?, 
-                    description = ?, webhook_url = ?, api_key = ?, config = ?, tags = ?, file_folder = ?, updated_at = CURRENT_TIMESTAMP
+                    description = ?, webhook_url = ?, api_key = ?, config = ?, tags = ?, file_folder = ?, online = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ?
             """, (form_data['name'], form_data['email'], form_data['organization'], form_data['messaging'], 
                   form_data['llm'], form_data['token'], form_data['description'], form_data['webhook_url'], 
-                  form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], bot_id))
+                  form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], form_data['online'], bot_id))
         else:
             conn.execute("""
                 UPDATE bots 
                 SET name = ?, email = ?, organization = ?, messaging = ?, llm = ?, token = ?, 
-                    description = ?, webhook_url = ?, api_key = ?, config = ?, tags = ?, file_folder = ?, updated_at = CURRENT_TIMESTAMP
+                    description = ?, webhook_url = ?, api_key = ?, config = ?, tags = ?, file_folder = ?, online = ?, updated_at = CURRENT_TIMESTAMP
                 WHERE id = ? AND user_id = ?
             """, (form_data['name'], form_data['email'], form_data['organization'], form_data['messaging'], 
                   form_data['llm'], form_data['token'], form_data['description'], form_data['webhook_url'], 
-                  form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], bot_id, user_id))
+                  form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], form_data['online'], bot_id, user_id))
         flash("Bot updated successfully!")
     else:  # Create new bot
         conn.execute("""
             INSERT INTO bots (user_id, name, email, organization, messaging, llm, token, 
-                             description, webhook_url, api_key, config, tags, file_folder)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             description, webhook_url, api_key, config, tags, file_folder, online)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (user_id, form_data['name'], form_data['email'], form_data['organization'], 
               form_data['messaging'], form_data['llm'], form_data['token'], form_data['description'], 
-              form_data['webhook_url'], form_data['api_key'], config_json, form_data['tags'], form_data['file_folder']))
+              form_data['webhook_url'], form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], form_data['online']))
         flash("Bot created successfully!")
     
     conn.commit()

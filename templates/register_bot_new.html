@@ -270,6 +270,22 @@
                             </div>
                             
                             {% if role == 'admin' %}
+                            <!-- Online Status (Admin only) -->
+                            <div class="mb-3">
+                                <label class="form-label">Online</label>
+                                <div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="online" id="online-yes" value="1" {{ 'checked' if (bot and bot.online == 1) or not bot else '' }}>
+                                        <label class="form-check-label" for="online-yes">Online</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" type="radio" name="online" id="online-no" value="0" {{ 'checked' if bot and bot.online == 0 else '' }}>
+                                        <label class="form-check-label" for="online-no">Offline</label>
+                                    </div>
+                                </div>
+                                <div class="form-text">Set whether this bot is currently online and accepting requests</div>
+                            </div>
+                            
                             <!-- File Folder (Admin Only) -->
                             <div class="mb-3">
                                 <label for="bot-file-folder" class="form-label">File Folder</label>

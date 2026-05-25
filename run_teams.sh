@@ -1,1 +1,0 @@
-python3 app_complete_with_groups.py
