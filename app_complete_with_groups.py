@@ -31,6 +31,8 @@ if S3_ENABLED:
         print(f"S3 storage not available, falling back to local filesystem: {e}")
         S3_ENABLED = False
         s3_client = None
+        # Remove env so local devs don't retry S3
+        os.environ.pop("S3_BUCKET_NAME", None)
 
 # Load .env file for local dev (silently ignore if not present, e.g. in Docker)
 # Skip in production when env vars are set via build args or system env.
