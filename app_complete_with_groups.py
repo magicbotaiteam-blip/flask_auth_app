@@ -121,7 +121,7 @@ def _int_pk(is_pg):
 def _on_conflict(is_pg, action="IGNORE"):
     """Return appropriate ON CONFLICT clause"""
     if is_pg:
-        return f"ON CONFLICT DO {action}"
+        return f" ON CONFLICT DO {action}"
     return f"INSERT OR {action}"
 
 def _is_pg():
@@ -180,8 +180,7 @@ def init_db_complete():
     try:
         if not pg:
             conn.execute("ALTER TABLE bots ADD COLUMN is_active BOOLEAN DEFAULT TRUE")
-        conn.execute("ALTER TABLE bots ADD COLUMN online INTEGER DEFAULT 0")
-        if not pg:
+            conn.execute("ALTER TABLE bots ADD COLUMN online INTEGER DEFAULT 0")
             conn.execute("UPDATE bots SET online = 0 WHERE online IS NULL")
         conn.commit()
     except Exception:
@@ -205,8 +204,8 @@ def init_db_complete():
     """)
     
     insert_role = _on_conflict(pg)
-    conn.execute(f"""{insert_role} INTO roles (name) VALUES ('admin')""")
-    conn.execute(f"""{insert_role} INTO roles (name) VALUES ('customer')""")
+    conn.execute(f"""INSERT INTO roles (name) VALUES ('admin'){insert_role}""")
+    conn.execute(f"""INSERT INTO roles (name) VALUES ('customer'){insert_role}""")
     
     conn.execute(f"""
         CREATE TABLE IF NOT EXISTS referrals (
@@ -294,8 +293,9 @@ def init_db_complete():
         (25, 49, 'Ambassador', '👑', 25, '25 referrals — you are an ambassador!'),
         (50, None, 'Legend', '💎', 50, '50 referrals — LEGENDARY status!'),
     ]
+    conflict_clause = _on_conflict(pg)
     conn.executemany(
-        _on_conflict(pg) + " INTO reward_tiers (min_referrals, max_referrals, badge_name, badge_icon, credits_reward, description) VALUES (?, ?, ?, ?, ?, ?)",
+        f"INSERT INTO reward_tiers (min_referrals, max_referrals, badge_name, badge_icon, credits_reward, description) VALUES (?, ?, ?, ?, ?, ?){conflict_clause}",
         reward_tiers_data
     )
     
