@@ -132,7 +132,9 @@ def init_group_db():
     conn.commit()
     conn.close()
 
-init_group_db()
+# Note: init_group_db() is called from app_complete_with_groups.py's init_db_complete()
+# so tables are created in the correct dependency order (users first).
+# Do NOT call init_group_db() here at module level for PostgreSQL compatibility.
 
 # ==================== Helper Functions ====================
 
