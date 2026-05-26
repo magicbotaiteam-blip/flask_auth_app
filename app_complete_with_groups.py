@@ -1746,18 +1746,37 @@ def bot_files(bot_id):
     # Get files from the bot's file folder
     file_folder = bot_dict.get("file_folder", "")
     files = []
-    if file_folder and os.path.exists(file_folder):
-        for f in sorted(os.listdir(file_folder)):
-            full_path = os.path.join(file_folder, f)
-            if os.path.isfile(full_path):
-                size = os.path.getsize(full_path)
-                modified = os.path.getmtime(full_path)
-                files.append({
-                    "name": f,
-                    "size": size,
-                    "modified": datetime.fromtimestamp(modified).strftime("%Y-%m-%d %H:%M:%S"),
-                    "path": full_path
-                })
+    if file_folder:
+        if S3_ENABLED and s3_client:
+            # List files from S3
+            prefix = file_folder.strip("/")
+            try:
+                resp = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=prefix + "/")
+                for obj in resp.get("Contents", []):
+                    key = obj["Key"]
+                    filename = key[len(prefix)+1:]
+                    if not filename:
+                        continue
+                    files.append({
+                        "name": filename,
+                        "size": obj["Size"],
+                        "modified": obj["LastModified"].strftime("%Y-%m-%d %H:%M:%S"),
+                        "s3_key": key
+                    })
+            except Exception as e:
+                print(f"Error listing S3 objects: {e}")
+        elif os.path.exists(file_folder):
+            for f in sorted(os.listdir(file_folder)):
+                full_path = os.path.join(file_folder, f)
+                if os.path.isfile(full_path):
+                    size = os.path.getsize(full_path)
+                    modified = os.path.getmtime(full_path)
+                    files.append({
+                        "name": f,
+                        "size": size,
+                        "modified": datetime.fromtimestamp(modified).strftime("%Y-%m-%d %H:%M:%S"),
+                        "path": full_path
+                    })
     
     return render_template(
         "bot_files.html",
@@ -1798,23 +1817,44 @@ def bot_download_file(bot_id, filename):
         flash("No file folder configured", "error")
         return redirect(url_for("bot_files", bot_id=bot_id))
 
-    # Security: resolve to absolute path and ensure it's inside the file folder
-    abs_folder = os.path.abspath(file_folder)
-    file_path = os.path.normpath(os.path.join(abs_folder, filename))
+    if S3_ENABLED and s3_client:
+        # Download from S3
+        s3_key = f"{file_folder.strip('/')}/{filename}"
+        try:
+            obj = s3_client.get_object(Bucket=S3_BUCKET, Key=s3_key)
+            file_bytes = obj["Body"].read()
+            mime_type, _ = mimetypes.guess_type(filename)
+            if not mime_type:
+                mime_type = obj.get("ContentType", "application/octet-stream")
+            from io import BytesIO
+            return send_file(
+                BytesIO(file_bytes),
+                mimetype=mime_type,
+                as_attachment=False,
+                download_name=filename
+            )
+        except s3_client.exceptions.NoSuchKey as e:
+            print(f"S3 key not found: {s3_key}")
+            flash("File not found", "error")
+            return redirect(url_for("bot_files", bot_id=bot_id))
+    else:
+        # Security: resolve to absolute path and ensure it's inside the file folder
+        abs_folder = os.path.abspath(file_folder)
+        file_path = os.path.normpath(os.path.join(abs_folder, filename))
 
-    if not file_path.startswith(abs_folder + os.sep):
-        flash("Invalid file path", "error")
-        return redirect(url_for("bot_files", bot_id=bot_id))
+        if not file_path.startswith(abs_folder + os.sep):
+            flash("Invalid file path", "error")
+            return redirect(url_for("bot_files", bot_id=bot_id))
 
-    if not os.path.isfile(file_path):
-        flash("File not found", "error")
-        return redirect(url_for("bot_files", bot_id=bot_id))
+        if not os.path.isfile(file_path):
+            flash("File not found", "error")
+            return redirect(url_for("bot_files", bot_id=bot_id))
 
-    mime_type, _ = mimetypes.guess_type(filename)
-    if not mime_type:
-        mime_type = "application/octet-stream"
+        mime_type, _ = mimetypes.guess_type(filename)
+        if not mime_type:
+            mime_type = "application/octet-stream"
 
-    return send_file(file_path, mimetype=mime_type, as_attachment=False, download_name=filename)
+        return send_file(file_path, mimetype=mime_type, as_attachment=False, download_name=filename)
 
 
 @app.route("/bot/delete/<int:bot_id>")
