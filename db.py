@@ -101,8 +101,14 @@ class _PgConnection:
     def executemany(self, sql, seq_of_params):
         from sqlalchemy import text
         stmt = text(sql) if isinstance(sql, str) else sql
+        # Use raw psycopg2 connection for executemany (tuple params)
+        raw_conn = self._session.connection().connection
+        raw_cursor = raw_conn.cursor()
+        raw_sql = str(stmt)
+        # Convert ? to %s for psycopg2
+        raw_sql = raw_sql.replace('?', '%s')
         for params in seq_of_params:
-            self._session.execute(stmt, params)
+            raw_cursor.execute(raw_sql, params)
 
     def commit(self):
         self._session.commit()
