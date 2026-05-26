@@ -47,26 +47,7 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Force new ECS deployment
-      id: deploy
-      run: |
-        aws ecs update-service \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --service ${{ env.ECS_SERVICE }} \
-          --force-new-deployment \
-          --no-cli-pager
-        echo "Force new deployment triggered (Express Mode will auto-pick up latest image)"
-
-    - name: Wait for deployment to stabilize
-      run: |
-        echo "Waiting for ECS deployment to complete..."
-        aws ecs wait services-stable \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --services ${{ env.ECS_SERVICE }} \
-          --no-cli-pager
-        echo "Deployment stable."
-
-    - name: Update ALB listener rule to correct target group
+    - name: Update ALB listener rule to correct target group (before deploy)
       run: |
         ALB_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:loadbalancer/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b"
         CORRECT_TG_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:targetgroup/ecs-gateway-tg-747807c47cdd4471c/dbde0c33289ccfdc"
@@ -104,6 +85,25 @@ jobs:
           
           echo "✅ Listener rule updated to forward to the correct target group."
         fi
+
+    - name: Force new ECS deployment
+      id: deploy
+      run: |
+        aws ecs update-service \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --service ${{ env.ECS_SERVICE }} \
+          --force-new-deployment \
+          --no-cli-pager
+        echo "Force new deployment triggered (Express Mode will auto-pick up latest image)"
+
+    - name: Wait for deployment to stabilize
+      run: |
+        echo "Waiting for ECS deployment to complete..."
+        aws ecs wait services-stable \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --no-cli-pager
+        echo "Deployment stable."
 
     - name: Delete old stale target groups (no registered targets)
       run: |
