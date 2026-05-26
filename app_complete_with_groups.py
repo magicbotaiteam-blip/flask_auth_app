@@ -198,8 +198,8 @@ def init_db_complete():
         CREATE TABLE IF NOT EXISTS user_roles (
             user_id INTEGER NOT NULL,
             role_id INTEGER NOT NULL,
-            PRIMARY KEY (user_id, role_id),
-            {"" if pg else "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,"}
+            PRIMARY KEY (user_id, role_id){"" if pg else ","}
+            {"" if pg else "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE"}{"" if pg else ","}
             {"" if pg else "FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE"}
         )
     """)
@@ -218,8 +218,8 @@ def init_db_complete():
             relationship TEXT,
             signed_up_user_id INTEGER,
             reward_given BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            {"" if pg else "FOREIGN KEY (referrer_user_id) REFERENCES users (id) ON DELETE CASCADE,"}
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP{"" if pg else ","}
+            {"" if pg else "FOREIGN KEY (referrer_user_id) REFERENCES users (id) ON DELETE CASCADE"}{"" if pg else ","}
             {"" if pg else "FOREIGN KEY (signed_up_user_id) REFERENCES users (id) ON DELETE SET NULL"}
         )
     """)
