@@ -12,3 +12,10 @@ URLObject==3.0.0
 
 python-dotenv==1.1.0
 boto3==1.37.0
+
+# Database - PostgreSQL for production, SQLite for local dev
+psycopg2-binary==2.9.10
+sqlalchemy==2.0.36
+
+# Email
+email-validator==2.2.0

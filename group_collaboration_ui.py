@@ -1,164 +1,131 @@
 """
 Group Collaboration UI Implementation
 For Magic Bot AI Flask Application
+
+Refactored to use shared db.py (SQLite local, PostgreSQL production).
 """
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
-import sqlite3
+from db import get_conn, is_postgres
 from pathlib import Path
 import json
 from datetime import datetime
 from functools import wraps
 
-DB_FILENAME = Path(__file__).parent / "users.db"
-
 # ==================== Database Functions ====================
 
 def get_db_connection():
-    """Get database connection with retry logic for locks"""
-    max_retries = 3
-    retry_delay = 0.1  # seconds
-    
-    for attempt in range(max_retries):
-        try:
-            # Add timeout to handle database locks
-            conn = sqlite3.connect(DB_FILENAME, timeout=10)
-            conn.row_factory = sqlite3.Row
-            # Enable WAL mode for better concurrency
-            conn.execute("PRAGMA journal_mode=WAL")
-            # Set busy timeout
-            conn.execute("PRAGMA busy_timeout = 5000")
-            return conn
-        except sqlite3.OperationalError as e:
-            if "locked" in str(e).lower() and attempt < max_retries - 1:
-                import time
-                time.sleep(retry_delay * (attempt + 1))  # Exponential backoff
-                continue
-            raise
-    # This should never be reached due to the raise above
-    raise sqlite3.OperationalError("Failed to connect to database after retries")
+    """Get database connection via shared db.py (supports SQLite & PostgreSQL)"""
+    return get_conn()
 
 def init_group_db():
     """Initialize database tables for group collaboration"""
+    pg = is_postgres()
     conn = get_db_connection()
     
     # Groups table
-    conn.execute("""
+    id_type = "SERIAL PRIMARY KEY" if pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
+    
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS groups (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {id_type},
             name TEXT NOT NULL,
             description TEXT,
-            created_by INTEGER NOT NULL,
+            created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_active BOOLEAN DEFAULT TRUE,
-            settings TEXT DEFAULT '{}',
-            FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE
+            settings TEXT DEFAULT '{{}}'
         )
     """)
     
     # Group members table with roles
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS group_members (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
-            role TEXT NOT NULL DEFAULT 'member',  -- owner, admin, member, viewer
+            id {id_type},
+            group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            role TEXT NOT NULL DEFAULT 'member',
             joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            invited_by INTEGER,
-            status TEXT DEFAULT 'active',  -- active, pending, suspended
-            permissions TEXT DEFAULT '{}',
-            FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-            FOREIGN KEY (invited_by) REFERENCES users (id) ON DELETE SET NULL,
+            invited_by INTEGER REFERENCES users(id) ON DELETE SET NULL,
+            status TEXT DEFAULT 'active',
+            permissions TEXT DEFAULT '{{}}',
             UNIQUE(group_id, user_id)
         )
     """)
     
     # Group invitations table
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS group_invitations (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER NOT NULL,
+            id {id_type},
+            group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
             email TEXT NOT NULL,
-            invited_by INTEGER NOT NULL,
+            invited_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             token TEXT NOT NULL UNIQUE,
             role TEXT DEFAULT 'member',
-            status TEXT DEFAULT 'pending',  -- pending, accepted, expired, revoked
+            status TEXT DEFAULT 'pending',
             expires_at TIMESTAMP,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
-            FOREIGN KEY (invited_by) REFERENCES users (id) ON DELETE CASCADE
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     
     # Shared bots table
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS shared_bots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            bot_id INTEGER NOT NULL,
-            group_id INTEGER NOT NULL,
-            shared_by INTEGER NOT NULL,
+            id {id_type},
+            bot_id INTEGER NOT NULL REFERENCES bots(id) ON DELETE CASCADE,
+            group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+            shared_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             shared_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            permissions TEXT DEFAULT '{}',
+            permissions TEXT DEFAULT '{{}}',
             is_active BOOLEAN DEFAULT TRUE,
-            FOREIGN KEY (bot_id) REFERENCES bots (id) ON DELETE CASCADE,
-            FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
-            FOREIGN KEY (shared_by) REFERENCES users (id) ON DELETE CASCADE,
             UNIQUE(bot_id, group_id)
         )
     """)
     
     # Group activity log
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS group_activity (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
+            id {id_type},
+            group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             activity_type TEXT NOT NULL,
             activity_data TEXT,
             ip_address TEXT,
             user_agent TEXT,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     
     # Group messages/chat
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS group_messages (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER NOT NULL,
-            user_id INTEGER NOT NULL,
+            id {id_type},
+            group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+            user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             message TEXT NOT NULL,
-            message_type TEXT DEFAULT 'text',  -- text, file, bot_update, system
+            message_type TEXT DEFAULT 'text',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             is_pinned BOOLEAN DEFAULT FALSE,
-            reply_to INTEGER,
-            FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-            FOREIGN KEY (reply_to) REFERENCES group_messages (id) ON DELETE SET NULL
+            reply_to INTEGER REFERENCES group_messages(id) ON DELETE SET NULL
         )
     """)
     
     # Group templates
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS group_templates (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            group_id INTEGER NOT NULL,
+            id {id_type},
+            group_id INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
             name TEXT NOT NULL,
             description TEXT,
             config TEXT NOT NULL,
             category TEXT,
-            created_by INTEGER NOT NULL,
+            created_by INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
             is_public BOOLEAN DEFAULT FALSE,
             usage_count INTEGER DEFAULT 0,
             tags TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (group_id) REFERENCES groups (id) ON DELETE CASCADE,
-            FOREIGN KEY (created_by) REFERENCES users (id) ON DELETE CASCADE
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     
@@ -335,7 +302,7 @@ def create_group_collaboration_ui(app):
     @app.route("/groups/create", methods=["GET", "POST"])
     @login_required
     def create_group():
-        """Create a new group - FIXED VERSION WITH PROPER TRANSACTION HANDLING"""
+        """Create a new group"""
         if request.method == "POST":
             name = request.form.get("name", "").strip()
             description = request.form.get("description", "").strip()
@@ -357,15 +324,8 @@ def create_group_collaboration_ui(app):
                 flash("You already have a group with this name.", "error")
                 return render_template("create_group.html", username=session.get("username"))
             
-            # Create group with transaction
-            conn = None
+            conn = get_db_connection()
             try:
-                conn = get_db_connection()
-                
-                # Start explicit transaction with immediate lock
-                conn.execute("BEGIN IMMEDIATE")
-                
-                # Execute INSERT and capture the cursor
                 cursor = conn.execute("""
                     INSERT INTO groups (name, description, created_by, settings)
                     VALUES (?, ?, ?, ?)
@@ -373,10 +333,10 @@ def create_group_collaboration_ui(app):
                     "allow_public_invites": False,
                     "default_role": "member",
                     "bot_sharing": True,
-                    "message_history": 90  # days
+                    "message_history": 90
                 })))
                 
-                # Get the last insert ID from the cursor
+                # lastrowid works for both backends via the wrapper
                 group_id = cursor.lastrowid
                 
                 # Add creator as owner
@@ -385,12 +345,9 @@ def create_group_collaboration_ui(app):
                     VALUES (?, ?, ?, ?)
                 """, (group_id, user_id, 'owner', user_id))
                 
-                # Commit transaction
                 conn.commit()
                 conn.close()
-                conn = None
                 
-                # Log activity (with a new connection to avoid locks)
                 try:
                     log_group_activity(group_id, user_id, 'group_created', {
                         'group_name': name,
@@ -398,24 +355,16 @@ def create_group_collaboration_ui(app):
                     }, request)
                 except Exception as log_error:
                     print(f"Warning: Failed to log activity: {log_error}")
-                    # Don't fail group creation if logging fails
                 
                 flash(f"Group '{name}' created successfully!", "success")
                 return redirect(url_for("group_dashboard", group_id=group_id))
                 
             except Exception as e:
-                # Clean up connection
-                if conn:
-                    try:
-                        conn.rollback()
-                        conn.close()
-                    except:
-                        pass
-                
+                conn.rollback()
+                conn.close()
                 flash(f"Error creating group: {e}", "error")
                 return render_template("create_group.html", username=session.get("username"))
         
-        # GET request - show form
         return render_template("create_group.html", username=session.get("username"))
     
     @app.route("/groups/<int:group_id>")
@@ -424,13 +373,9 @@ def create_group_collaboration_ui(app):
         """Group dashboard"""
         conn = get_db_connection()
         
-        # Get group info
         group = conn.execute("SELECT * FROM groups WHERE id = ?", (group_id,)).fetchone()
-        
-        # Get group members
         members = get_group_members(group_id)
         
-        # Get group bots
         bots = conn.execute("""
             SELECT b.*, sb.shared_at, sb.permissions as share_permissions,
                    u.username as shared_by_name
@@ -441,7 +386,6 @@ def create_group_collaboration_ui(app):
             ORDER BY sb.shared_at DESC
         """, (group_id,)).fetchall()
         
-        # Get recent activity
         activity = conn.execute("""
             SELECT ta.*, u.username
             FROM group_activity ta
@@ -451,7 +395,6 @@ def create_group_collaboration_ui(app):
             LIMIT 20
         """, (group_id,)).fetchall()
         
-        # Get recent messages
         recent_messages = conn.execute("""
             SELECT tm.*, u.username
             FROM group_messages tm
@@ -463,7 +406,6 @@ def create_group_collaboration_ui(app):
         
         conn.close()
         
-        # Get user's role in this group
         c2 = get_db_connection()
         user_role = c2.execute("""
             SELECT role FROM group_members
@@ -482,5 +424,3 @@ def create_group_collaboration_ui(app):
                              user_role=user_role["role"] if user_role else None,
                              is_admin=(session.get("role") == "admin"),
                              active_page='groups')
-    
-    # Note: The rest of the functions are in group_collaboration_ui_part2.py

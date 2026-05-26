@@ -1,0 +1,250 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'RDS PostgreSQL instance for Flask Auth App - persistent database'
+
+Parameters:
+  EnvironmentName:
+    Type: String
+    Default: production
+    Description: Environment name used in resource naming
+
+  DBUsername:
+    Type: String
+    Default: flaskapp
+    Description: Master database username
+    NoEcho: true
+
+  DBPassword:
+    Type: String
+    Description: Master database password (min 8 chars, must include uppercase, lowercase, and number)
+    NoEcho: true
+    MinLength: 8
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID where RDS will be deployed
+
+  SubnetIds:
+    Type: List<AWS::EC2::Subnet::Id>
+    Description: At least two subnets in different AZs for the DB subnet group
+
+  AllowedSecurityGroup:
+    Type: AWS::EC2::SecurityGroup::Id
+    Description: Security group that can access this database (e.g., ECS tasks security group)
+
+  DBInstanceClass:
+    Type: String
+    Default: db.t4g.micro
+    Description: RDS instance class
+    AllowedValues:
+      - db.t4g.micro
+      - db.t4g.small
+      - db.t4g.medium
+      - db.serverless
+
+  StorageGB:
+    Type: Number
+    Default: 20
+    MinValue: 20
+    MaxValue: 100
+    Description: Allocated storage in GB
+
+  UseServerless:
+    Type: String
+    Default: 'false'
+    Description: Use Aurora Serverless v2 instead of provisioned
+    AllowedValues:
+      - 'true'
+      - 'false'
+
+Conditions:
+  IsProvisioned: !Equals [!Ref UseServerless, 'false']
+  IsServerless: !Equals [!Ref UseServerless, 'true']
+
+Resources:
+  # DB Subnet Group
+  DBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: !Sub 'Subnet group for ${EnvironmentName} RDS'
+      SubnetIds: !Ref SubnetIds
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-flask-db-subnet-group'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # Security group for RDS
+  DBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: !Sub 'Security group for ${EnvironmentName} RDS PostgreSQL'
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 5432
+          ToPort: 5432
+          SourceSecurityGroupId: !Ref AllowedSecurityGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-flask-db-sg'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # RDS Parameter Group
+  DBParameterGroup:
+    Type: AWS::RDS::DBParameterGroup
+    Condition: IsProvisioned
+    Properties:
+      Family: postgres16
+      Description: !Sub 'Parameter group for ${EnvironmentName} Flask app'
+      Parameters:
+        timezone: UTC
+        log_statement: ddl
+        log_min_duration_statement: 1000
+
+  # Provisioned RDS Instance
+  DBInstance:
+    Type: AWS::RDS::DBInstance
+    Condition: IsProvisioned
+    Properties:
+      DBInstanceIdentifier: !Sub '${EnvironmentName}-flask-auth-db'
+      DBName: flask_auth_app
+      Engine: postgres
+      EngineVersion: '16.6'
+      DBInstanceClass: !Ref DBInstanceClass
+      AllocatedStorage: !Ref StorageGB
+      StorageType: gp3
+      StorageEncrypted: true
+      EnablePerformanceInsights: false
+      AutoMinorVersionUpgrade: true
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: '03:00-04:00'
+      PreferredMaintenanceWindow: 'sun:04:00-05:00'
+      DeleteAutomatedBackups: true
+      DeletionProtection: true
+      MultiAZ: false
+      PubliclyAccessible: false
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VPCSecurityGroups:
+        - !GetAtt DBSecurityGroup.GroupId
+      DBParameterGroupName: !Ref DBParameterGroup
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-flask-auth-db'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+        - Key: Backup
+          Value: daily
+
+  # Aurora Serverless (alternative)
+  DBCluster:
+    Type: AWS::RDS::DBCluster
+    Condition: IsServerless
+    Properties:
+      DBClusterIdentifier: !Sub '${EnvironmentName}-flask-auth-cluster'
+      Engine: aurora-postgresql
+      EngineVersion: '16.6'
+      DatabaseName: flask_auth_app
+      MasterUsername: !Ref DBUsername
+      MasterUserPassword: !Ref DBPassword
+      DBSubnetGroupName: !Ref DBSubnetGroup
+      VpcSecurityGroupIds:
+        - !GetAtt DBSecurityGroup.GroupId
+      BackupRetentionPeriod: 7
+      PreferredBackupWindow: '03:00-04:00'
+      PreferredMaintenanceWindow: 'sun:04:00-05:00'
+      DeletionProtection: true
+      StorageEncrypted: true
+      ServerlessV2ScalingConfiguration:
+        MinCapacity: 0.5
+        MaxCapacity: 4
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-flask-auth-cluster'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # Aurora Serverless DB Instance (for Serverless mode)
+  DBClusterInstance:
+    Type: AWS::RDS::DBInstance
+    Condition: IsServerless
+    Properties:
+      DBClusterIdentifier: !Ref DBCluster
+      DBInstanceClass: db.serverless
+      Engine: aurora-postgresql
+      PubliclyAccessible: false
+      Tags:
+        - Key: Name
+          Value: !Sub '${EnvironmentName}-flask-auth-instance'
+        - Key: Environment
+          Value: !Ref EnvironmentName
+
+  # SSM Parameter Store entries so ECS can read the connection string
+  DBEndpointParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsProvisioned
+    Properties:
+      Name: !Sub '/${EnvironmentName}/flask-auth-db/endpoint'
+      Type: String
+      Value: !GetAtt DBInstance.Endpoint.Address
+      Description: RDS endpoint for Flask auth app
+      Tags:
+        Environment: !Ref EnvironmentName
+
+  DBConnectionStringParameter:
+    Type: AWS::SSM::Parameter
+    Condition: IsProvisioned
+    Properties:
+      Name: !Sub '/${EnvironmentName}/flask-auth-db/connection-string'
+      Type: String
+      Value: !Sub 'postgresql://${DBUsername}:${DBPassword}@${DBInstance.Endpoint.Address}:5432/flask_auth_app'
+      Description: Full PostgreSQL connection string for Flask auth app
+      Tags:
+        Environment: !Ref EnvironmentName
+
+  DBEndpointParameterServerless:
+    Type: AWS::SSM::Parameter
+    Condition: IsServerless
+    Properties:
+      Name: !Sub '/${EnvironmentName}/flask-auth-db/endpoint'
+      Type: String
+      Value: !GetAtt DBCluster.Endpoint.Address
+      Description: Aurora cluster endpoint for Flask auth app
+      Tags:
+        Environment: !Ref EnvironmentName
+
+  DBConnectionStringParameterServerless:
+    Type: AWS::SSM::Parameter
+    Condition: IsServerless
+    Properties:
+      Name: !Sub '/${EnvironmentName}/flask-auth-db/connection-string'
+      Type: String
+      Value: !Sub 'postgresql://${DBUsername}:${DBPassword}@${DBCluster.Endpoint.Address}:5432/flask_auth_app'
+      Description: Full PostgreSQL connection string for Flask auth app
+      Tags:
+        Environment: !Ref EnvironmentName
+
+Outputs:
+  DBEndpoint:
+    Description: RDS database endpoint
+    Value: !If
+      - IsProvisioned
+      - !GetAtt DBInstance.Endpoint.Address
+      - !GetAtt DBCluster.Endpoint.Address
+
+  DBConnectionString:
+    Description: PostgreSQL connection string (use SSM Parameter for secure access)
+    Value: !If
+      - IsProvisioned
+      - !Sub 'postgresql://${DBUsername}:${DBPassword}@${DBInstance.Endpoint.Address}:5432/flask_auth_app'
+      - !Sub 'postgresql://${DBUsername}:${DBPassword}@${DBCluster.Endpoint.Address}:5432/flask_auth_app'
+
+  DBSecurityGroupId:
+    Description: Security group attached to RDS
+    Value: !GetAtt DBSecurityGroup.GroupId
+
+  ConnectionStringParameterName:
+    Description: SSM Parameter name for the connection string
+    Value: !Sub '/${EnvironmentName}/flask-auth-db/connection-string'

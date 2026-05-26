@@ -26,6 +26,10 @@ ENV SKIP_DOTENV=1
 ARG S3_BUCKET_NAME=flask-auth-app-uploads
 ENV S3_BUCKET_NAME=$S3_BUCKET_NAME
 
+# PostgreSQL connection string (set via SSM or ECS env)
+# Example: postgresql://username:password@host:5432/flask_auth_app
+ENV DATABASE_URL=
+
 # Expose port 80 (Express Mode ALB expects port 80)
 EXPOSE 80
 

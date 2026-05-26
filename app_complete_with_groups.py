@@ -4,7 +4,6 @@ With Telegram Bot API + Group Collaboration UI
 """
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file, send_from_directory
-import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from pathlib import Path
@@ -14,6 +13,9 @@ from datetime import datetime
 from functools import wraps
 from dotenv import load_dotenv
 import io
+
+# Database layer — use db.py (SQLite local, PostgreSQL production)
+from db import get_conn as get_db_connection, is_postgres as _is_pg_db, connect as _db_connect
 
 # S3 storage (optional, for production)
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
@@ -48,7 +50,7 @@ from telegram_bot_api_part2 import create_telegram_bot_api_part2
 
 # Import Group Collaboration UI
 from group_collaboration_ui import (
-    get_db_connection, init_group_db, get_user_groups, get_group_members,
+    init_group_db, get_user_groups, get_group_members,
     check_group_permission, log_group_activity, login_required, 
     group_required, group_admin_required, create_group_collaboration_ui
 )
@@ -108,18 +110,34 @@ if HAS_GOOGLE_OAUTH:
     app.register_blueprint(google_bp, url_prefix="/login")
     print(f"✅ Google OAuth configured (using {'TEST' if 'test-client-id' in google_client_id else 'REAL'} credentials)")
 
-DB_FILENAME = Path(__file__).parent / "users.db"
-
 # ==================== Database Initialization ====================
 
+def _int_pk(is_pg):
+    """Return appropriate primary key type"""
+    if is_pg:
+        return "SERIAL PRIMARY KEY"
+    return "INTEGER PRIMARY KEY AUTOINCREMENT"
+
+def _on_conflict(is_pg, action="IGNORE"):
+    """Return appropriate ON CONFLICT clause"""
+    if is_pg:
+        return f"ON CONFLICT DO {action}"
+    return f"INSERT OR {action}"
+
+def _is_pg():
+    """Check if we're running on PostgreSQL"""
+    return _is_pg_db()
+
 def init_db_complete():
-    """Initialize all database tables"""
+    """Initialize all database tables (supports both SQLite and PostgreSQL)"""
+    pg = _is_pg()
+    pk = _int_pk(pg)
     conn = get_db_connection()
     
     # Basic tables (from original app)
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS users (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk},
             provider TEXT NOT NULL DEFAULT 'local',
             provider_id TEXT UNIQUE,
             username TEXT NOT NULL UNIQUE,
@@ -132,9 +150,9 @@ def init_db_complete():
         )
     """)
     
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS bots (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk},
             user_id INTEGER NOT NULL,
             name TEXT NOT NULL,
             email TEXT,
@@ -154,41 +172,45 @@ def init_db_complete():
             api_key TEXT,
             tags TEXT,
             file_folder TEXT,
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            {"" if pg else "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE"}
         )
     """)
     
-    # Add online column if it doesn't exist (for existing databases)
+    # Bot is_current column migration
     try:
+        if not pg:
+            conn.execute("ALTER TABLE bots ADD COLUMN is_active BOOLEAN DEFAULT TRUE")
         conn.execute("ALTER TABLE bots ADD COLUMN online INTEGER DEFAULT 0")
-        conn.execute("UPDATE bots SET online = 0 WHERE online IS NULL")
+        if not pg:
+            conn.execute("UPDATE bots SET online = 0 WHERE online IS NULL")
         conn.commit()
-    except:
+    except Exception:
         pass
     
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS roles (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk},
             name TEXT NOT NULL UNIQUE
         )
     """)
     
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS user_roles (
             user_id INTEGER NOT NULL,
             role_id INTEGER NOT NULL,
             PRIMARY KEY (user_id, role_id),
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
-            FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE
+            {"" if pg else "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,"}
+            {"" if pg else "FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE"}
         )
     """)
     
-    conn.execute("INSERT OR IGNORE INTO roles (name) VALUES ('admin')")
-    conn.execute("INSERT OR IGNORE INTO roles (name) VALUES ('customer')")
+    insert_role = _on_conflict(pg)
+    conn.execute(f"""{insert_role} INTO roles (name) VALUES ('admin')""")
+    conn.execute(f"""{insert_role} INTO roles (name) VALUES ('customer')""")
     
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS referrals (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk},
             referrer_user_id INTEGER NOT NULL,
             your_name TEXT,
             name TEXT NOT NULL,
@@ -197,32 +219,36 @@ def init_db_complete():
             signed_up_user_id INTEGER,
             reward_given BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (referrer_user_id) REFERENCES users (id) ON DELETE CASCADE,
-            FOREIGN KEY (signed_up_user_id) REFERENCES users (id) ON DELETE SET NULL
+            {"" if pg else "FOREIGN KEY (referrer_user_id) REFERENCES users (id) ON DELETE CASCADE,"}
+            {"" if pg else "FOREIGN KEY (signed_up_user_id) REFERENCES users (id) ON DELETE SET NULL"}
         )
     """)
     
     # Migration: add referral columns to existing users table
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN referral_credits INTEGER DEFAULT 0")
-        print("[DB] Added referral_credits column to users")
-    except sqlite3.OperationalError:
-        pass  # Column already exists
-    try:
-        conn.execute("ALTER TABLE users ADD COLUMN referral_badge TEXT DEFAULT NULL")
-        print("[DB] Added referral_badge column to users")
-    except sqlite3.OperationalError:
-        pass
-    try:
-        conn.execute("ALTER TABLE referrals ADD COLUMN reward_given BOOLEAN DEFAULT FALSE")
-        print("[DB] Added reward_given column to referrals")
-    except sqlite3.OperationalError:
-        pass
+    for col_sql, col_name in [
+        ("ALTER TABLE users ADD COLUMN referral_credits INTEGER DEFAULT 0", "referral_credits"),
+        ("ALTER TABLE users ADD COLUMN referral_badge TEXT DEFAULT NULL", "referral_badge"),
+        ("ALTER TABLE referrals ADD COLUMN reward_given BOOLEAN DEFAULT FALSE", "reward_given"),
+    ]:
+        if pg:
+            # Check if column exists in PG
+            chk = conn.execute(f"""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = '{col_sql.split()[2]}' AND column_name = '{col_name}'
+            """).fetchone()
+            if not chk:
+                print(f"[DB] Added {col_name} column")
+        else:
+            try:
+                conn.execute(col_sql)
+                print(f"[DB] Added {col_name} column")
+            except Exception:
+                pass
     
     # Reward tiers table
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS reward_tiers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk},
             min_referrals INTEGER NOT NULL,
             max_referrals INTEGER,
             badge_name TEXT NOT NULL UNIQUE,
@@ -233,23 +259,22 @@ def init_db_complete():
     """)
     
     # Reward redemptions table
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS reward_redemptions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk},
             user_id INTEGER NOT NULL,
             reward_type TEXT NOT NULL,
             credits_spent INTEGER NOT NULL,
             status TEXT DEFAULT 'pending',
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
     
-    # Reset reward tiers to clean state (recreate with UNIQUE constraint)
+    # Reset reward tiers to clean state
     conn.execute('DROP TABLE IF EXISTS reward_tiers')
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE reward_tiers (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk},
             min_referrals INTEGER NOT NULL,
             max_referrals INTEGER,
             badge_name TEXT NOT NULL UNIQUE,
@@ -270,27 +295,26 @@ def init_db_complete():
         (50, None, 'Legend', '💎', 50, '50 referrals — LEGENDARY status!'),
     ]
     conn.executemany(
-        "INSERT OR IGNORE INTO reward_tiers (min_referrals, max_referrals, badge_name, badge_icon, credits_reward, description) VALUES (?, ?, ?, ?, ?, ?)",
+        _on_conflict(pg) + " INTO reward_tiers (min_referrals, max_referrals, badge_name, badge_icon, credits_reward, description) VALUES (?, ?, ?, ?, ?, ?)",
         reward_tiers_data
     )
     
     # Group collaboration tables (will be created by init_group_db)
     init_group_db()
     
-    conn.commit()
     # Password reset tokens table
-    conn.execute("""
+    conn.execute(f"""
         CREATE TABLE IF NOT EXISTS password_reset_tokens (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id {pk},
             user_id INTEGER NOT NULL,
             token TEXT NOT NULL UNIQUE,
             expires_at TIMESTAMP NOT NULL,
             used BOOLEAN DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
-
+    
+    conn.commit()
     conn.close()
 
 init_db_complete()
@@ -393,7 +417,7 @@ def reset_password():
         # Validate token
         conn = get_db_connection()
         reset = conn.execute(
-            "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > datetime('now')",
+            "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > " + ("NOW()" if _is_pg_db() else "datetime('now')") + "",
             (token,)
         ).fetchone()
         conn.close()
@@ -425,7 +449,7 @@ def reset_password():
         
         # Validate token again
         reset = conn.execute(
-            "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > datetime('now')",
+            "SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > " + ("NOW()" if _is_pg_db() else "datetime('now')") + "",
             (token,)
         ).fetchone()
         
@@ -2546,7 +2570,7 @@ if __name__ == "__main__":
     print(f"Google OAuth: {'Enabled' if HAS_GOOGLE_OAUTH else 'Disabled'}")
     print(f"Telegram Bot API: Enabled (11 endpoints)")
     print(f"Group Collaboration: Enabled")
-    print(f"Database: {DB_FILENAME}")
+    print(f"Database: db.py (auto-detected SQLite or PostgreSQL)")
     print("=" * 60)
     print("Features:")
     print("  • User Authentication (Local + Google OAuth)")
