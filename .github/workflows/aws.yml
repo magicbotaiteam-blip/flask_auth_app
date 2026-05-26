@@ -47,11 +47,75 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Update ALB listener rule to correct target group (before deploy)
+    - name: Determine the correct target group from the service
+      id: find-tg
       run: |
+        echo "Finding the target group that this service actually uses..."
+        # Get services, find the target group with registered healthy targets
+        TASK_ARN=$(aws ecs list-tasks --cluster ${{ env.ECS_CLUSTER }} --service-name ${{ env.ECS_SERVICE }} --query 'taskArns[0]' --output text --no-cli-pager)
+        ENI_ID=$(aws ecs describe-tasks --cluster ${{ env.ECS_CLUSTER }} --tasks "$TASK_ARN" --query 'tasks[0].attachments[0].details[?name=="networkInterfaceId"].value' --output text --no-cli-pager)
+        
+        # Find which target group has this ENI registered
         ALB_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:loadbalancer/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b"
-        CORRECT_TG_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:targetgroup/ecs-gateway-tg-747807c47cdd4471c/dbde0c33289ccfdc"
+        TGS=$(aws elbv2 describe-target-groups --load-balancer-arn "$ALB_ARN" --query 'TargetGroups[].TargetGroupArn' --output text --no-cli-pager)
+        
+        ACTIVE_TG=""
+        for TG in $TGS; do
+          HEALTHY=$(aws elbv2 describe-target-health --target-group-arn "$TG" --query 'TargetHealthDescriptions[?TargetHealth.State==`healthy`].Target.Id' --output text --no-cli-pager 2>/dev/null)
+          if echo "$HEALTHY" | grep -q "$ENI_ID"; then
+            ACTIVE_TG="$TG"
+            break
+          fi
+        done
+        
+        if [ -z "$ACTIVE_TG" ]; then
+          # Fallback: use the one with any registered targets
+          for TG in $TGS; do
+            HEALTHY=$(aws elbv2 describe-target-health --target-group-arn "$TG" --query 'TargetHealthDescriptions[].Target.Id' --output text --no-cli-pager 2>/dev/null)
+            if [ -n "$HEALTHY" ]; then
+              ACTIVE_TG="$TG"
+              break
+            fi
+          done
+        fi
+
+        echo "Active target group: $ACTIVE_TG"
+        echo "active-tg=$ACTIVE_TG" >> $GITHUB_OUTPUT
+
+    - name: Force new ECS deployment
+      id: deploy
+      run: |
+        aws ecs update-service \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --service ${{ env.ECS_SERVICE }} \
+          --force-new-deployment \
+          --no-cli-pager
+        echo "Force new deployment triggered (Express Mode will auto-pick up latest image)"
+
+    - name: Wait for deployment to stabilize
+      run: |
+        echo "Waiting for ECS deployment to complete..."
+        aws ecs wait services-stable \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --no-cli-pager
+        echo "Deployment stable."
+
+    - name: Update ALB listener rule to the correct target group (after deploy)
+      run: |
+        ACTIVE_TG="${{ steps.find-tg.outputs.active-tg }}"
+        ALB_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:loadbalancer/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b"
         LISTENER_PORT=443
+
+        if [ -z "$ACTIVE_TG" ] || [ "$ACTIVE_TG" = "null" ]; then
+          echo "WARNING: Could not determine active target group. Checking current target groups..."
+          TGS=$(aws elbv2 describe-target-groups --load-balancer-arn "$ALB_ARN" --query 'TargetGroups[].TargetGroupArn' --output text --no-cli-pager)
+          for TG in $TGS; do
+            HEALTHY=$(aws elbv2 describe-target-health --target-group-arn "$TG" --query 'TargetHealthDescriptions[]' --output json --no-cli-pager 2>/dev/null)
+            echo "TG $TG: $HEALTHY"
+          done
+          exit 1
+        fi
 
         echo "Fetching listener ARN for port $LISTENER_PORT..."
         LISTENER_ARN=$(aws elbv2 describe-listeners \
@@ -73,50 +137,38 @@ jobs:
         if [ -z "$RULE_ARN" ] || [ "$RULE_ARN" = "null" ]; then
           echo "WARNING: Could not find listener rule for magicaibots.com. Skipping rule update."
           echo "Current rules:"
-          echo "$RULES" | jq '.Rules[] | {priority: .Priority, conditions: .Conditions}' 2>/dev/null || echo "$RULES"
+          echo "$RULES" | jq '.Rules[] | {priority: .Priority, conditions: .Conditions, actions: [.Actions[].TargetGroupArn]}' 2>/dev/null
         else
           echo "Found rule: $RULE_ARN"
+          echo "Current target group(s): $(echo "$RULES" | jq -r --arg RULE "$RULE_ARN" '.Rules[] | select(.RuleArn == $RULE) | .Actions[].TargetGroupArn' 2>/dev/null)"
           
-          # Update the rule to forward to the correct target group
+          # Update the rule to forward to the active target group
           aws elbv2 modify-rule \
             --rule-arn "$RULE_ARN" \
-            --actions "[{\"Type\": \"forward\", \"ForwardConfig\": {\"TargetGroups\": [{\"TargetGroupArn\": \"$CORRECT_TG_ARN\", \"Weight\": 100}]}}]" \
+            --actions "[{\"Type\": \"forward\", \"ForwardConfig\": {\"TargetGroups\": [{\"TargetGroupArn\": \"$ACTIVE_TG\", \"Weight\": 100}]}}]" \
             --no-cli-pager
           
-          echo "✅ Listener rule updated to forward to the correct target group."
+          echo "✅ Listener rule updated to forward to target group: $ACTIVE_TG"
         fi
-
-    - name: Force new ECS deployment
-      id: deploy
-      run: |
-        aws ecs update-service \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --service ${{ env.ECS_SERVICE }} \
-          --force-new-deployment \
-          --no-cli-pager
-        echo "Force new deployment triggered (Express Mode will auto-pick up latest image)"
-
-    - name: Wait for deployment to stabilize
-      run: |
-        echo "Waiting for ECS deployment to complete..."
-        aws ecs wait services-stable \
-          --cluster ${{ env.ECS_CLUSTER }} \
-          --services ${{ env.ECS_SERVICE }} \
-          --no-cli-pager
-        echo "Deployment stable."
 
     - name: Delete old stale target groups (no registered targets)
       run: |
+        ACTIVE_TG="${{ steps.find-tg.outputs.active-tg }}"
         echo "Cleaning up stale target groups..."
-        STALE_TGS=$(aws elbv2 describe-target-groups \
-          --load-balancer-arn "arn:aws:elasticloadbalancing:us-east-1:404006608636:loadbalancer/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b" \
-          --query "TargetGroups[?TargetGroupName!='ecs-gateway-tg-747807c47cdd4471c'].TargetGroupArn" \
+        ALB_ARN="arn:aws:elasticloadbalancing:us-east-1:404006608636:loadbalancer/app/ecs-express-gateway-alb-09703220/94a812b45a64d63b"
+        ALL_TGS=$(aws elbv2 describe-target-groups \
+          --load-balancer-arn "$ALB_ARN" \
+          --query 'TargetGroups[].TargetGroupArn' \
           --output text \
           --no-cli-pager)
         
-        for TG in $STALE_TGS; do
-          TARGETS=$(aws elbv2 describe-target-health --target-group-arn "$TG" --query 'TargetHealthDescriptions[].Target.Id' --output text --no-cli-pager 2>/dev/null || echo "none")
-          if [ -z "$TARGETS" ] || [ "$TARGETS" = "none" ]; then
+        for TG in $ALL_TGS; do
+          if [ "$TG" = "$ACTIVE_TG" ]; then
+            echo "Skipping active TG: $TG"
+            continue
+          fi
+          TARGETS=$(aws elbv2 describe-target-health --target-group-arn "$TG" --query 'TargetHealthDescriptions[].Target.Id' --output text --no-cli-pager 2>/dev/null || echo "")
+          if [ -z "$TARGETS" ]; then
             echo "Deleting stale target group: $TG"
             aws elbv2 delete-target-group --target-group-arn "$TG" --no-cli-pager 2>/dev/null || echo "Could not delete $TG (may be in use)"
           fi
