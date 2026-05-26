@@ -118,7 +118,7 @@ def _int_pk(is_pg):
         return "SERIAL PRIMARY KEY"
     return "INTEGER PRIMARY KEY AUTOINCREMENT"
 
-def _on_conflict(is_pg, action="IGNORE"):
+def _on_conflict(is_pg, action="NOTHING"):
     """Return appropriate ON CONFLICT clause"""
     if is_pg:
         return f" ON CONFLICT DO {action}"
