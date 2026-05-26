@@ -171,7 +171,7 @@ def init_db_complete():
             webhook_url TEXT,
             api_key TEXT,
             tags TEXT,
-            file_folder TEXT,
+            file_folder TEXT
             {"" if pg else "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE"}
         )
     """)
