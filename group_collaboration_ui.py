@@ -18,10 +18,12 @@ def get_db_connection():
     """Get database connection via shared db.py (supports SQLite & PostgreSQL)"""
     return get_conn()
 
-def init_group_db():
+def init_group_db(conn=None):
     """Initialize database tables for group collaboration"""
     pg = is_postgres()
-    conn = get_db_connection()
+    _own_conn = conn is None
+    if conn is None:
+        conn = get_db_connection()
     
     # Groups table
     id_type = "SERIAL PRIMARY KEY" if pg else "INTEGER PRIMARY KEY AUTOINCREMENT"
@@ -129,8 +131,9 @@ def init_group_db():
         )
     """)
     
-    conn.commit()
-    conn.close()
+    if _own_conn:
+        conn.commit()
+        conn.close()
 
 # Note: init_group_db() is called from app_complete_with_groups.py's init_db_complete()
 # so tables are created in the correct dependency order (users first).

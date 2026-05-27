@@ -118,11 +118,13 @@ def _int_pk(is_pg):
         return "SERIAL PRIMARY KEY"
     return "INTEGER PRIMARY KEY AUTOINCREMENT"
 
-def _on_conflict(is_pg, action="NOTHING"):
-    """Return appropriate ON CONFLICT clause"""
-    if is_pg:
-        return f" ON CONFLICT DO {action}"
-    return f"INSERT OR {action}"
+def _on_conflict_prefix(is_pg):
+    """SQLite prefix: ' OR IGNORE' between INSERT and INTO"""
+    return "" if is_pg else " OR IGNORE"
+
+def _on_conflict_suffix(is_pg, action="NOTHING"):
+    """PG suffix: ' ON CONFLICT DO NOTHING' after VALUES"""
+    return f" ON CONFLICT DO {action}" if is_pg else ""
 
 def _is_pg():
     """Check if we're running on PostgreSQL"""
@@ -172,7 +174,7 @@ def init_db_complete():
             api_key TEXT,
             tags TEXT,
             file_folder TEXT
-            {"" if pg else "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE"}
+            {"" if pg else ", FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE"}
         )
     """)
     
@@ -198,14 +200,14 @@ def init_db_complete():
             user_id INTEGER NOT NULL,
             role_id INTEGER NOT NULL,
             PRIMARY KEY (user_id, role_id){"" if pg else ","}
-            {"" if pg else "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE"}{"" if pg else ","}
+            {"" if pg else "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,"}
             {"" if pg else "FOREIGN KEY (role_id) REFERENCES roles (id) ON DELETE CASCADE"}
         )
     """)
     
-    insert_role = _on_conflict(pg)
-    conn.execute(f"""INSERT INTO roles (name) VALUES ('admin'){insert_role}""")
-    conn.execute(f"""INSERT INTO roles (name) VALUES ('customer'){insert_role}""")
+    insert_role = _on_conflict_suffix(pg)
+    conn.execute(f"""INSERT{_on_conflict_prefix(pg)} INTO roles (name) VALUES ('admin'){insert_role}""")
+    conn.execute(f"""INSERT{_on_conflict_prefix(pg)} INTO roles (name) VALUES ('customer'){insert_role}""")
     
     conn.execute(f"""
         CREATE TABLE IF NOT EXISTS referrals (
@@ -218,7 +220,7 @@ def init_db_complete():
             signed_up_user_id INTEGER,
             reward_given BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP{"" if pg else ","}
-            {"" if pg else "FOREIGN KEY (referrer_user_id) REFERENCES users (id) ON DELETE CASCADE"}{"" if pg else ","}
+            {"" if pg else "FOREIGN KEY (referrer_user_id) REFERENCES users (id) ON DELETE CASCADE,"}
             {"" if pg else "FOREIGN KEY (signed_up_user_id) REFERENCES users (id) ON DELETE SET NULL"}
         )
     """)
@@ -293,14 +295,14 @@ def init_db_complete():
         (25, 49, 'Ambassador', '👑', 25, '25 referrals — you are an ambassador!'),
         (50, None, 'Legend', '💎', 50, '50 referrals — LEGENDARY status!'),
     ]
-    conflict_clause = _on_conflict(pg)
+    conflict_clause = _on_conflict_suffix(pg)
     conn.executemany(
-        f"INSERT INTO reward_tiers (min_referrals, max_referrals, badge_name, badge_icon, credits_reward, description) VALUES (?, ?, ?, ?, ?, ?){conflict_clause}",
+        f"INSERT{_on_conflict_prefix(pg)} INTO reward_tiers (min_referrals, max_referrals, badge_name, badge_icon, credits_reward, description) VALUES (?, ?, ?, ?, ?, ?){conflict_clause}",
         reward_tiers_data
     )
     
     # Group collaboration tables (will be created by init_group_db)
-    init_group_db()
+    init_group_db(conn)
     
     # Password reset tokens table
     conn.execute(f"""
