@@ -93,9 +93,16 @@ class _PgConnection:
         from sqlalchemy import text
         if params is None:
             params = ()
-        # Convert sql string to text() if needed
-        stmt = text(sql) if isinstance(sql, str) else sql
-        result = self._session.execute(stmt, params)
+        if isinstance(sql, str) and '?' in sql:
+            # Use raw psycopg2 for ?-placeholder SQL (sqlite3 compatibility)
+            raw_conn = self._session.connection().connection
+            raw_cursor = raw_conn.cursor()
+            raw_sql = sql.replace('?', '%s')
+            raw_cursor.execute(raw_sql, params if params else [])
+            result = raw_cursor
+        else:
+            stmt = text(sql) if isinstance(sql, str) else sql
+            result = self._session.execute(stmt, params)
         return _PgCursor(result)
 
     def executemany(self, sql, seq_of_params):
