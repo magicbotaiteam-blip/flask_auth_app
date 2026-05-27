@@ -163,10 +163,6 @@ class _PgConnection:
     # PRAGMA no-ops (ignored in PG)
     PRAGMA_IGNORE = {"journal_mode", "busy_timeout", "synchronous", "foreign_keys", "page_size", "cache_size"}
 
-    def cursor(self):
-        """Return self as a cursor (sqlite3 compat)."""
-        return self
-
     def __getattr__(self, name):
         if name == "PRAGMA_IGNORE":
             return self.PRAGMA_IGNORE
