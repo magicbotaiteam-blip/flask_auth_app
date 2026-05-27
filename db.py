@@ -154,8 +154,24 @@ class _PgCursor:
         self._iterator = None
         self._key_fn = None  # for row_factory equivalent
         self.lastrowid = None
+        # Detect if result is a raw psycopg2 cursor (has description attrs directly)
+        import psycopg2
+        self._is_raw = isinstance(result, psycopg2.extensions.cursor)
+        if self._is_raw:
+            self._columns = [desc[0] for desc in result.description] if result.description else []
+
+    def _row_to_dict(self, row):
+        if self._is_raw:
+            # row is a tuple, map by column position
+            return dict(zip(self._columns, row))
+        return row._mapping
 
     def fetchone(self):
+        if self._is_raw:
+            row = self._result.fetchone()
+            if row is None:
+                return None
+            return _PgRow(self._row_to_dict(row))
         if self._rows is None:
             self._rows = list(self._result)
         if self._iterator is None:
@@ -167,13 +183,20 @@ class _PgCursor:
             return None
 
     def fetchall(self):
+        if self._is_raw:
+            rows = self._result.fetchall()
+            return [_PgRow(self._row_to_dict(r)) for r in rows]
         if self._rows is None:
             self._rows = list(self._result)
         return [_PgRow(r._mapping) for r in self._rows]
 
     @property
     def description(self):
-        return self._result.keys() if hasattr(self._result, 'keys') else []
+        if hasattr(self._result, 'keys'):
+            return self._result.keys()
+        if self._is_raw:
+            return [desc[0] for desc in self._result.description] if self._result.description else []
+        return []
 
 
 class _PgRow:
