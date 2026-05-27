@@ -164,13 +164,77 @@ class _PgConnection:
     PRAGMA_IGNORE = {"journal_mode", "busy_timeout", "synchronous", "foreign_keys", "page_size", "cache_size"}
 
     def cursor(self):
-        """Return self as a cursor (sqlite3 compat)."""
-        return self
+        """Return a cursor wrapper (sqlite3 compat)."""
+        return _PgCursorWrapper(self._session)
 
     def __getattr__(self, name):
         if name == "PRAGMA_IGNORE":
             return self.PRAGMA_IGNORE
         raise AttributeError(f"'_PgConnection' object has no attribute '{name}'")
+
+
+class _PgCursorWrapper:
+    """Wraps a SQLAlchemy session as a cursor-like object (sqlite3 compat).
+    Has execute(), fetchone(), fetchall(), lastrowid.
+    """
+
+    def __init__(self, session):
+        self._session = session
+        self._last_result = None
+        self.lastrowid = None
+
+    def execute(self, sql, params=None):
+        import re
+        from sqlalchemy import text
+        if params is None:
+            params = ()
+        if isinstance(sql, str) and '?' in sql:
+            raw_conn = self._session.connection().connection
+            raw_cursor = raw_conn.cursor()
+            raw_sql = sql.replace('?', '%s')
+            raw_cursor.execute(raw_sql, params if params else [])
+            self._last_result = _PgCursor(raw_cursor)
+            if raw_sql.strip().upper().startswith("INSERT"):
+                try:
+                    raw_cursor.execute("SELECT LASTVAL()")
+                    row = raw_cursor.fetchone()
+                    if row:
+                        self.lastrowid = row[0]
+                        self._last_result.lastrowid = row[0]
+                except Exception:
+                    pass
+        else:
+            stmt = text(sql) if isinstance(sql, str) else sql
+            result = self._session.execute(stmt, params)
+            self._last_result = _PgCursor(result)
+            if isinstance(sql, str) and sql.strip().upper().startswith("INSERT"):
+                try:
+                    raw_conn = self._session.connection().connection
+                    raw_cursor = raw_conn.cursor()
+                    raw_cursor.execute("SELECT LASTVAL()")
+                    row = raw_cursor.fetchone()
+                    if row:
+                        self.lastrowid = row[0]
+                        self._last_result.lastrowid = row[0]
+                except Exception:
+                    pass
+        return self._last_result
+
+    def fetchone(self):
+        if self._last_result:
+            return self._last_result.fetchone()
+        return None
+
+    def fetchall(self):
+        if self._last_result:
+            return self._last_result.fetchall()
+        return []
+
+    @property
+    def description(self):
+        if self._last_result:
+            return self._last_result.description
+        return []
 
 
 class _PgCursor:
