@@ -203,7 +203,13 @@ class _PgRow:
     """Dict-like row compatible with sqlite3.Row."""
 
     def __init__(self, mapping):
-        self._mapping = dict(mapping)
+        self._mapping = {}
+        for k, v in dict(mapping).items():
+            # Convert PG datetime objects to strings (SQLite compatibility)
+            if hasattr(v, 'isoformat'):
+                self._mapping[k] = v.isoformat()
+            else:
+                self._mapping[k] = v
 
     def keys(self):
         return self._mapping.keys()
