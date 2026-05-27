@@ -90,6 +90,7 @@ class _PgConnection:
         self._txn_open = False
 
     def execute(self, sql, params=None):
+        import re
         from sqlalchemy import text
         if params is None:
             params = ()
@@ -99,11 +100,34 @@ class _PgConnection:
             raw_cursor = raw_conn.cursor()
             raw_sql = sql.replace('?', '%s')
             raw_cursor.execute(raw_sql, params if params else [])
-            result = raw_cursor
+            cursor_obj = _PgCursor(raw_cursor)
+            # Populate lastrowid for INSERT statements (sqlite3 compatibility)
+            if raw_sql.strip().upper().startswith("INSERT"):
+                try:
+                    raw_cursor.execute("SELECT LASTVAL()")
+                    row = raw_cursor.fetchone()
+                    if row:
+                        cursor_obj.lastrowid = row[0]
+                except Exception:
+                    # LASTVAL() fails if no sequence was affected, ignore
+                    pass
+            return cursor_obj
         else:
             stmt = text(sql) if isinstance(sql, str) else sql
             result = self._session.execute(stmt, params)
-        return _PgCursor(result)
+            cursor_obj = _PgCursor(result)
+            # SQLAlchemy text() path: populate lastrowid for INSERT
+            if isinstance(sql, str) and sql.strip().upper().startswith("INSERT"):
+                try:
+                    raw_conn = self._session.connection().connection
+                    raw_cursor = raw_conn.cursor()
+                    raw_cursor.execute("SELECT LASTVAL()")
+                    row = raw_cursor.fetchone()
+                    if row:
+                        cursor_obj.lastrowid = row[0]
+                except Exception:
+                    pass
+            return cursor_obj
 
     def executemany(self, sql, seq_of_params):
         from sqlalchemy import text
