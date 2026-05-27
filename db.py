@@ -142,7 +142,7 @@ class _PgConnection:
     def __getattr__(self, name):
         if name == "PRAGMA_IGNORE":
             return self.PRAGMA_IGNORE
-        return super().__getattr__(name)
+        raise AttributeError(f"'_PgConnection' object has no attribute '{name}'")
 
 
 class _PgCursor:
