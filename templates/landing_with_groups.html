@@ -37,7 +37,7 @@
                             An automation platform that 
                             <span class="position-relative d-inline-block" style="padding-right: 260px;">
                                 can change your life!
-                                <img src="{{ url_for('static', filename='Magic_Bot_AI.png') }}" alt="AI Magic Bot" class="hero-logo-animated magic-spin color-shift" style="position: absolute; top: -90px; right: -580px; width: 400px; height: 400px; border-radius: 40px; object-fit: cover; border: 5px solid rgba(255, 255, 255, 0.3); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);" data-bs-toggle="tooltip" data-bs-placement="top" title="✨ Fun Fact: This logo was created with AI magic! It represents the fusion of technology and creativity that powers our platform.">
+                                <img src="{{ url_for('static', filename='Magic_Bot_AI.png') }}" alt="AI Magic Bot" class="hero-logo-animated magic-spin color-shift" style="position: absolute; top: -90px; right: -580px; width: 280px; height: 280px; border-radius: 40px; object-fit: cover; border: 5px solid rgba(255, 255, 255, 0.3); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);" data-bs-toggle="tooltip" data-bs-placement="top" title="✨ Fun Fact: This logo was created with AI magic! It represents the fusion of technology and creativity that powers our platform.">
                             </span>
                         </p>
                     </div>
@@ -55,11 +55,11 @@
                         </div>
                         <div class="d-flex align-items-center">
                             <i class="bi bi-check-circle-fill text-success fs-4 me-2"></i>
-                            <span>Setup in 5 minutes</span>
+                            <span>24/7 Support</span>
                         </div>
                         <div class="d-flex align-items-center">
-                            <i class="bi bi-check-circle-fill text-success fs-4 me-2"></i>
-                            <span>24/7 Support</span>
+                            <i class="bi bi-arrow-right-circle-fill text-white fs-4 me-2"></i>
+                            <a href="/features/how-to-start" class="text-white fw-semibold text-decoration-none">How to Get Started</a>
                         </div>
                     </div>
                 </div>
@@ -77,19 +77,19 @@
         </div>
     </section>
 
-    <!-- Video Tutorials & Demos Section -->
+    <!-- Video Tutorials Section -->
     <section class="py-5 bg-light position-relative">
         <div class="container position-relative">
             <div class="row">
                 <div class="col-lg-10 mx-auto">
                     <div class="text-center mt-5 pt-4">
-                        <h3 class="h1 fw-bold mb-4">Video Tutorials & Demos</h3>
-                        <p class="lead mb-5">Watch these videos to see amazing AI Magic Bot use cases.</p>
+                        <h3 class="h1 fw-bold mb-4">Video Tutorials </h3>
+                        <p class="lead mb-5">Watch these videos to see amazing AI Magic Bots.</p>
                     </div>
                     
-                    <div class="row g-4">
+                    <div class="row g-2">
                         <!-- Video 1 -->
-                        <div class="col-md-6 col-lg-3">
+                        <div class="col">
                             <div class="video-card">
                                 <div class="video-thumbnail" style="background-image: url('{{ url_for('static', filename='Magic_Bot_AI.png') }}');">
                                     <a href="https://www.youtube.com/watch?v=BzMdbrSldxA" target="_blank">
@@ -113,7 +113,7 @@
                         </div>
                         
                         <!-- Video 2 -->
-                        <div class="col-md-6 col-lg-3">
+                        <div class="col">
                             <div class="video-card">
                                 <div class="video-thumbnail" style="background-image: url('{{ url_for('static', filename='stock-analysis.png') }}');">
                                     <a href="https://www.youtube.com/watch?v=TBVFOXXLyxY" target="_blank">
@@ -137,7 +137,7 @@
                         </div>
                         
                         <!-- Video 3 -->
-                        <div class="col-md-6 col-lg-3">
+                        <div class="col">
                             <div class="video-card">
                                 <div class="video-thumbnail" style="background-image: url('{{ url_for('static', filename='trumpTrade.jpg') }}');">
                                     <a href="https://www.youtube.com/watch?v=DWh-l5XzN3I" target="_blank">
@@ -161,7 +161,7 @@
                         </div>
                         
                         <!-- Video 4 -->
-                        <div class="col-md-6 col-lg-3">
+                        <div class="col">
                             <div class="video-card">
                                 <div class="video-thumbnail" style="background-image: url('{{ url_for('static', filename='buyMacBook.jpg') }}');">
                                     <a href="https://www.youtube.com/watch?v=2JIN_BeBBEo" target="_blank">
@@ -184,8 +184,32 @@
                             </div>
                         </div>
                         
-                        <!-- Video 5 -->
-                        <div class="col-md-6 col-lg-3">
+                        <!-- Video 5 - Real Estate Assistant -->
+                        <div class="col">
+                            <div class="video-card">
+                                <div class="video-thumbnail" style="background-image: url('{{ url_for('static', filename='realestate_yt.jpg') }}');">
+                                    <a href="https://www.youtube.com/watch?v=im5Zy9iKM34" target="_blank">
+                                        <div class="video-play-btn">
+                                            <i class="bi bi-play-circle"></i>
+                                        </div>
+                                        <div class="video-overlay">
+                                            <h5>Real Estate Assistant</h5>
+                                            <p class="small">Search for properties, price cuts, and market data across Orange County</p>
+                                        </div>
+                                    </a>
+                                </div>
+                                <div class="video-info">
+                                    <h5>Real Estate Assistant</h5>
+                                    <p class="text-muted small">Find your dream home with AI-powered real estate search</p>
+                                    <a href="https://www.youtube.com/watch?v=im5Zy9iKM34" target="_blank" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-youtube"></i> Watch Now
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Video 6 -->
+                        <div class="col">
                             <div class="video-card">
                                 <div class="video-thumbnail" style="background-image: url('{{ url_for('static', filename='hq720.jpg') }}');">
                                     <a href="https://www.youtube.com/watch?v=ZKASsiQcd7E" target="_blank">
@@ -207,13 +231,81 @@
                                 </div>
                             </div>
                         </div>
+                        
                     </div>
 
-                    <div class="text-center mt-5 pt-5">
-                        <a href="https://www.youtube.com/watch?v=TBVFOXXLyxY" target="_blank" class="btn btn-outline-light btn-lg px-5 py-3 fw-bold" style="border-radius: 15px; border-width: 2px;">
-                            <i class="bi bi-play-circle"></i> Watch 2-Min Demo
-                        </a>
+                    <!-- Demo Bots Section -->
+                    <div class="text-center mt-5 pt-4">
+                        <h3 class="h1 fw-bold mb-4">Try Our Demo Bots on Telegram</h3>
+                        <p class="lead mb-4">Experience AI Magic Bot in action — no signup required!</p>
+                        
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body p-4 text-center">
+                                        <div class="mb-3">
+                                            <i class="bi bi-currency-exchange display-4 text-success"></i>
+                                        </div>
+                                        <h5 class="fw-bold">Stock Analysis Bot</h5>
+                                        <p class="text-muted small mb-3">Ask about any stock — get real-time analysis, fundamentals, and technical insights.</p>
+                                        <p class="small mb-2">If you are already logged in to Telegram Web on this browser, click</p>
+                                        <a href="https://web.telegram.org/k/#@stockAnalysis_magicbot" target="_blank" class="btn btn-outline-primary">
+                                            <i class="bi bi-telegram"></i> @stockAnalysis_magicbot
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body p-4 text-center">
+                                        <div class="mb-3">
+                                            <i class="bi bi-cart display-4 text-warning"></i>
+                                        </div>
+                                        <h5 class="fw-bold">Shopping Helper Bot</h5>
+                                        <p class="text-muted small mb-3">Find the best deals, compare prices, and get shopping recommendations instantly.</p>
+                                        <p class="small mb-2">If you are already logged in to Telegram Web on this browser, click</p>
+                                        <a href="https://web.telegram.org/k/#@shoppingHelper_magicbot" target="_blank" class="btn btn-outline-primary">
+                                            <i class="bi bi-telegram"></i> @shoppingHelper_magicbot
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card h-100 border-0 shadow-sm">
+                                    <div class="card-body p-4 text-center">
+                                        <div class="mb-3">
+                                            <i class="bi bi-house-heart display-4 text-danger"></i>
+                                        </div>
+                                        <h5 class="fw-bold">Real Estate Report Bot</h5>
+                                        <p class="text-muted small mb-3">Search properties, find price cuts, and get comprehensive real estate market reports.</p>
+                                        <p class="small mb-2">If you are already logged in to Telegram Web on this browser, click</p>
+                                        <a href="https://web.telegram.org/k/#@realEstateReport_magicbot" target="_blank" class="btn btn-outline-primary">
+                                            <i class="bi bi-telegram"></i> @realEstateReport_magicbot
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card border-0 shadow-sm bg-light">
+                            <div class="card-body p-4 text-start">
+                                <h6 class="fw-bold mb-3"><i class="bi bi-info-circle"></i> How to Find Demo Bot on Telegram:</h6>
+                                <ol class="mb-0 small" style="line-height: 1.8;">
+                                    <li><strong>Open Telegram App</strong> — Launch Telegram on your mobile device or desktop</li>
+                                    <li><strong>Search for Your Bot</strong>
+                                        <ul class="mt-1 mb-0">
+                                            <li><strong>Method A:</strong> Copy the bot name @YourBotName</li>
+                                            <li><strong>Method B:</strong> Search for @YourBotName in Telegram search</li>
+                                            <li><strong>Method C:</strong> Scan the QR code provided in email</li>
+                                        </ul>
+                                    </li>
+                                    <li><strong>Start Conversation</strong> — Click "Start" or send /start command to begin interacting with your bot</li>
+                                    <li><strong>Test Your Bot</strong> — Send a message to verify your bot responds correctly</li>
+                                </ol>
+                            </div>
+                        </div>
                     </div>
+
                 </div>
             </div>
         </div>
@@ -231,33 +323,11 @@
             <div class="row">
                 <div class="col-lg-10 mx-auto">
                     <div class="text-center mb-5">
-                        <h2 class="display-5 fw-bold mb-4">Your Seat on the <span class="highlight-text">AI Train</span> is Waiting</h2>
-                    </div>
-                    
-                    <div class="card border-0 shadow-lg mb-5">
-                        <div class="card-body p-5">
-                            <div class="row align-items-center">
-                                <div class="col-lg-8">
-                                    <h3 class="h2 fw-bold mb-4">You know AI is the future, but you haven't yet found your seat on the train</h3>
-                            <p class="lead mb-4">Our platform is powered by cutting-edge agent skills that ensure tasks are executed with maximum efficiency, reliability, and intelligence—all with zero cybersecurity risk. By eliminating the need for prompt engineering, we remove the friction for users new to AI, allowing anyone to automate complex workflows effortlessly.</p>
-                                </div>
-                                <div class="col-lg-4 text-center">
-                                    <div class="p-4">
-                                        <i class="bi bi-train-front-fill display-1 text-primary mb-3"></i>
-                                        <h4 class="fw-bold">All Aboard!</h4>
-                                        <p class="text-muted">The AI train is leaving the station. Don't get left behind.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="text-center mb-5">
                         <h3 class="h1 fw-bold mb-4">Meet Your New <span class="highlight-text">Personal Assistant</span></h3>
                         <p class="lead mb-5">Ready to transform every aspect of your life and business.</p>
                     </div>
                     
-                    <div class="row g-4">
+                    <div class="row g-2">
                         <div class="col-md-6 col-lg-4">
                             <div class="card h-100 border-0 shadow-sm hover-lift">
                                 <div class="card-body p-4">
@@ -372,43 +442,11 @@
             </div>
             
             <div class="row mb-5">
-                <div class="col-lg-10 mx-auto text-center">
-                    <span class="badge-premium mb-3">🚀 REVOLUTIONARY TECHNOLOGY</span>
-                    <h2 class="display-5 fw-bold mb-4">Why AI Magic Bot is <span class="highlight-text">Truly Revolutionary</span></h2>
-                    <p class="lead">We're not just another automation tool - we're redefining what's possible with AI!</p>
-                    
-                    <!-- Stats Banner -->
-                    <div class="row mt-5 g-3">
-                        <div class="col-md-3">
-                            <div class="bg-light p-3 rounded-3">
-                                <div class="fs-1 fw-bold text-primary">60s</div>
-                                <div class="text-muted">Bot Creation</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="bg-light p-3 rounded-3">
-                                <div class="fs-1 fw-bold text-success">500+</div>
-                                <div class="text-muted">Integrations</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="bg-light p-3 rounded-3">
-                                <div class="fs-1 fw-bold text-warning">99.99%</div>
-                                <div class="text-muted">Uptime</div>
-                            </div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="bg-light p-3 rounded-3">
-                                <div class="fs-1 fw-bold text-info">24/7</div>
-                                <div class="text-muted">AI Support</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
             </div>
             
             <!-- Revolutionary Features Grid -->
-            <div class="row g-4">
+            <div class="row g-2">
                 <!-- Feature 1: Lightning-Fast Creation -->
                 <div class="col-lg-6">
                     <div class="feature-card enhanced">
@@ -469,70 +507,9 @@
                     </div>
                 </div>
                 
-                <!-- Feature 5: 500+ Integrations -->
-                <div class="col-lg-6">
-                    <div class="feature-card enhanced">
-                        <div class="d-flex align-items-start">
-                            <div class="feature-icon me-4">
-                                <i class="bi bi-plug"></i>
-                            </div>
-                            <div>
-                                <h3 class="fw-bold mb-3">🔌 500+ Seamless Integrations</h3>
-                                <p class="text-muted mb-3">Connect with every tool you use. If we don't have it, we'll build it for you - for free! Your ecosystem, fully integrated.</p>
-                                <div class="d-flex flex-wrap gap-2 mb-3">
-                                    <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25">Slack</span>
-                                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">Salesforce</span>
-                                    <span class="badge bg-warning bg-opacity-10 text-warning border border-warning border-opacity-25">Google Workspace</span>
-                                    <span class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">Zendesk</span>
-                                    <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25">Custom APIs</span>
-                                </div>
-                                <div class="alert alert-info bg-info bg-opacity-5 border-info border-opacity-25">
-                                    <i class="bi bi-lightning-charge me-2"></i>
-                                    <strong>Integration Promise:</strong> Need a specific integration? We'll build it within 48 hours - completely free!
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
                 
-                <!-- Feature 6: Global Deployment -->
-                <div class="col-lg-6">
-                    <div class="feature-card enhanced">
-                        <div class="d-flex align-items-start">
-                            <div class="feature-icon me-4">
-                                <i class="bi bi-globe"></i>
-                            </div>
-                            <div>
-                                <h3 class="fw-bold mb-3">🌍 Global Deployment Network</h3>
-                                <p class="text-muted mb-3">Deploy anywhere in the world with one click. Your bots work while you sleep, serving you in every timezone.</p>
-                                <div class="row g-2 mb-3">
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center">
-                                            <i class="bi bi-translate text-primary me-2"></i>
-                                            <span>Multi-language Support</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center">
-                                            <i class="bi bi-arrows-fullscreen text-warning me-2"></i>
-                                            <span>Automatic Scaling</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <div class="d-flex align-items-center">
-                                            <i class="bi bi-shield-check text-info me-2"></i>
-                                            <span>99.99% Uptime</span>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="d-flex align-items-center">
-                                    <i class="bi bi-award text-warning me-2"></i>
-                                    <span class="small"><strong>Global Reach:</strong> Serving customers in 150+ countries with sub-100ms response times</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+
             </div>
             
             <!-- Call to Action within Features -->
@@ -569,7 +546,7 @@
                         
                         <div class="p-5 bg-white rounded-4 shadow-lg position-relative">
                             <h3 class="fw-bold mb-4">Why OpenClaw Makes Us Unbeatable:</h3>
-                            <div class="row g-4">
+                            <div class="row g-2">
                                 <div class="col-6">
                                     <div class="d-flex align-items-start mb-4">
                                         <div class="bg-success bg-opacity-10 p-3 rounded-3 me-3">
@@ -654,8 +631,8 @@
                 </div>
             </div>
             
-            <div class="row g-4">
-                <div class="col-md-6 col-lg-3">
+            <div class="row g-2">
+                <div class="col">
                     <div class="benefit-card text-center h-100">
                         <div class="bg-primary bg-opacity-10 p-4 rounded-4 d-inline-block mb-4">
                             <i class="bi bi-cash-coin fs-1 text-primary"></i>
@@ -665,7 +642,7 @@
                     </div>
                 </div>
                 
-                <div class="col-md-6 col-lg-3">
+                <div class="col">
                     <div class="benefit-card text-center h-100">
                         <div class="bg-success bg-opacity-10 p-4 rounded-4 d-inline-block mb-4">
                             <i class="bi bi-clock fs-1 text-success"></i>
@@ -675,7 +652,7 @@
                     </div>
                 </div>
                 
-                <div class="col-md-6 col-lg-3">
+                <div class="col">
                     <div class="benefit-card text-center h-100">
                         <div class="bg-warning bg-opacity-10 p-4 rounded-4 d-inline-block mb-4">
                             <i class="bi bi-emoji-smile fs-1 text-warning"></i>
@@ -685,7 +662,7 @@
                     </div>
                 </div>
                 
-                <div class="col-md-6 col-lg-3">
+                <div class="col">
                     <div class="benefit-card text-center h-100">
                         <div class="bg-info bg-opacity-10 p-4 rounded-4 d-inline-block mb-4">
                             <i class="bi bi-graph-up-arrow fs-1 text-info"></i>
@@ -713,7 +690,7 @@
                 <div class="col-lg-8 mx-auto">
                     <div class="contact-form">
                         <form id="contact-form" method="POST" action="#">
-                            <div class="row g-4">
+                            <div class="row g-2">
                                 <div class="col-md-6">
                                     <div class="form-floating">
                                         <input type="text" class="form-control" id="name" placeholder="Your Name">
