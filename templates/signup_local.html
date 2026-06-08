@@ -45,10 +45,14 @@
             color: #0d131a;
             min-height: 100vh;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+        
+        .auth-page-wrapper {
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            min-height: calc(100vh - 80px);
         }
         
         .auth-container {
@@ -262,6 +266,8 @@
     </style>
 </head>
 <body>
+    {% include '_navbar_public.html' %}
+    <div class="auth-page-wrapper">
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
@@ -377,6 +383,7 @@
                 <a href="{{ url_for('signin_local') }}" class="auth-link">Sign in here</a>
             </div>
         </div>
+    </div>
     </div>
     
     <script>

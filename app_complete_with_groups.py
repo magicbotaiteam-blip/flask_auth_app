@@ -1463,10 +1463,22 @@ def register_bot(bot_id=None):
         print(f"DEBUG: Bot keys: {list(bot.keys()) if hasattr(bot, 'keys') else 'No keys attribute'}")
         print(f"DEBUG: Bot name: {bot.get('name') if isinstance(bot, dict) else 'Not a dict'}")
     
+    # Fetch user's email for default value
+    user_email = ""
+    try:
+        conn = get_db_connection()
+        user = conn.execute("SELECT email FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+        if user:
+            user_email = user["email"]
+        conn.close()
+    except Exception as e:
+        print(f"DEBUG: Error fetching user email: {e}")
+    
     return render_template("register_bot_new.html", 
                          bot=bot, 
                          username=session.get("username"),
-                         role=role)
+                         role=role,
+                         user_email=user_email)
 
 @app.route("/check-bot-name")
 @login_required
