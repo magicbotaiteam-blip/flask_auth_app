@@ -184,6 +184,17 @@ def init_db_complete():
             conn.execute("ALTER TABLE bots ADD COLUMN is_active BOOLEAN DEFAULT TRUE")
             conn.execute("ALTER TABLE bots ADD COLUMN online INTEGER DEFAULT 0")
             conn.execute("UPDATE bots SET online = 0 WHERE online IS NULL")
+            conn.execute("ALTER TABLE bots ADD COLUMN status TEXT DEFAULT 'active'")
+            conn.execute("UPDATE bots SET status = 'active' WHERE status IS NULL")
+        conn.commit()
+    except Exception:
+        pass
+    
+    # Bot status column migration (pending/active)
+    try:
+        if not pg:
+            conn.execute("ALTER TABLE bots ADD COLUMN status TEXT DEFAULT 'active'")
+            conn.execute("UPDATE bots SET status = 'active' WHERE status IS NULL")
         conn.commit()
     except Exception:
         pass
@@ -1585,20 +1596,99 @@ def save_bot():
                   form_data['llm'], form_data['token'], form_data['description'], form_data['webhook_url'], 
                   form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], form_data['online'], bot_id, user_id))
         flash("Bot updated successfully!")
-    else:  # Create new bot
+    else:  # Create new bot — default status is 'pending'
         conn.execute("""
             INSERT INTO bots (user_id, name, email, organization, messaging, llm, token, 
-                             description, webhook_url, api_key, config, tags, file_folder, online)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                             description, webhook_url, api_key, config, tags, file_folder, online, status, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0)
         """, (user_id, form_data['name'], form_data['email'], form_data['organization'], 
               form_data['messaging'], form_data['llm'], form_data['token'], form_data['description'], 
               form_data['webhook_url'], form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], form_data['online']))
-        flash("Bot created successfully!")
+        flash("Bot created successfully! Our team will review and activate it shortly.")
     
     conn.commit()
     conn.close()
     
     return redirect(url_for("my_bots"))
+
+# ==================== Email helpers (SMTP, works on ECS) ====================
+
+def send_bot_activation_email(bot_name, recipient_email):
+    """
+    Send bot activation notification via SMTP using magicopenclawbot@gmail.com.
+    Works in AWS ECS (no keychain/gog dependency).
+    """
+    import smtplib
+    from email.mime.text import MIMEText
+    
+    smtp_user = "magicopenclawbot@gmail.com"
+    # App Password stored in env var — set in ECS task definition or local .env
+    smtp_pass = os.environ.get("GMAIL_BOT_APP_PASSWORD", "")
+    
+    if not smtp_pass:
+        print("[ACTIVATE] GMAIL_BOT_APP_PASSWORD not set, skipping email")
+        return False
+    
+    subject = f"Your Bot is Ready - {bot_name}"
+    body = (
+        f"Dear Customer,\n\n"
+        f"your new Telegram bot, {bot_name}, is\n"
+        f"ready for use. Search for the bot name directly in Telegram to get\n"
+        f"started. Enjoy your new bot!\n\n"
+        f"Magic Bot AI team"
+    )
+    
+    msg = MIMEText(body)
+    msg["Subject"] = subject
+    msg["From"] = f"Magic Bot AI <{smtp_user}>"
+    msg["To"] = recipient_email
+    
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(smtp_user, smtp_pass)
+            server.send_message(msg)
+        print(f"[ACTIVATE] Activation email sent to {recipient_email}")
+        return True
+    except Exception as e:
+        print(f"[ACTIVATE] Failed to send email: {e}")
+        return False
+
+
+@app.route("/admin/bot/<int:bot_id>/activate", methods=["POST"])
+@admin_required_route
+def admin_activate_bot(bot_id):
+    """Activate a pending bot and send notification email"""
+    conn = get_db_connection()
+    bot = conn.execute("SELECT * FROM bots WHERE id = ?", (bot_id,)).fetchone()
+    
+    if not bot:
+        conn.close()
+        flash("Bot not found.", "error")
+        return redirect(url_for("admin_bots"))
+    
+    if bot["status"] == "active":
+        conn.close()
+        flash(f"Bot '{bot['name']}' is already active.", "info")
+        return redirect(url_for("admin_bots"))
+    
+    # Update status to active
+    conn.execute(
+        "UPDATE bots SET status = 'active', is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        (bot_id,)
+    )
+    conn.commit()
+    conn.close()
+    
+    # Send activation email
+    recipient_email = bot["email"] or ""
+    if recipient_email:
+        send_bot_activation_email(bot["name"], recipient_email)
+    else:
+        print(f"[ACTIVATE] Bot {bot_id} has no email, skipping notification")
+    
+    flash(f"Bot '{bot['name']}' has been activated. Email sent to {recipient_email}.", "success")
+    return redirect(url_for("admin_bots"))
 
 @app.route("/bot/<int:bot_id>")
 @login_required

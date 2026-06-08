@@ -155,14 +155,21 @@
                                 <td data-label="Email">{{ bot.email or '—' }}</td>
                                 <td data-label="Type"><span class="badge bg-info">{{ bot.messaging|title if bot.messaging else 'N/A' }}</span></td>
                                 <td data-label="Status">
-                                    {% if bot.is_active %}
+                                    {% if bot.status == 'active' %}
                                     <span class="badge bg-success">Active</span>
+                                    {% elif bot.status == 'pending' %}
+                                    <span class="badge bg-warning text-dark">Pending</span>
                                     {% else %}
                                     <span class="badge bg-secondary">Inactive</span>
                                     {% endif %}
                                 </td>
                                 <td data-label="Created">{{ bot.created_at[:10] if bot.created_at else '—' }}</td>
                                 <td data-label="Actions" class="actions-cell">
+                                    {% if bot.status != 'active' %}
+                                    <form action="/admin/bot/{{ bot.id }}/activate" method="POST" style="display:inline">
+                                        <button type="submit" class="btn btn-sm btn-success action-btn"><i class="bi bi-check-circle"></i> Activate</button>
+                                    </form>
+                                    {% endif %}
                                     <a href="/bot/{{ bot.id }}" class="btn btn-sm btn-outline-primary action-btn"><i class="bi bi-eye"></i> View</a>
                                     <a href="/register-bot?bot_id={{ bot.id }}" class="btn btn-sm btn-outline-secondary action-btn"><i class="bi bi-pencil"></i> Edit</a>
                                     <a href="/bot/{{ bot.id }}/usage" class="btn btn-sm action-btn" style="background: #7c3aed; color: white;"><i class="bi bi-graph-up"></i> Usage</a>
