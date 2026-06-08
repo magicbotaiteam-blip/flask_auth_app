@@ -178,26 +178,33 @@ def init_db_complete():
         )
     """)
     
-    # Bot is_current column migration
+    # Bot migration: is_active, online, status columns
     try:
-        if not pg:
-            conn.execute("ALTER TABLE bots ADD COLUMN is_active BOOLEAN DEFAULT TRUE")
-            conn.execute("ALTER TABLE bots ADD COLUMN online INTEGER DEFAULT 0")
+        if pg:
+            # PostgreSQL supports IF NOT EXISTS
+            conn.execute("ALTER TABLE bots ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE")
+            conn.execute("ALTER TABLE bots ADD COLUMN IF NOT EXISTS online INTEGER DEFAULT 0")
             conn.execute("UPDATE bots SET online = 0 WHERE online IS NULL")
-            conn.execute("ALTER TABLE bots ADD COLUMN status TEXT DEFAULT 'active'")
-            conn.execute("UPDATE bots SET status = 'active' WHERE status IS NULL")
+            conn.execute("ALTER TABLE bots ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'active'")
+        else:
+            # SQLite — catch errors if column already exists
+            try:
+                conn.execute("ALTER TABLE bots ADD COLUMN is_active BOOLEAN DEFAULT TRUE")
+            except Exception:
+                pass
+            try:
+                conn.execute("ALTER TABLE bots ADD COLUMN online INTEGER DEFAULT 0")
+            except Exception:
+                pass
+            try:
+                conn.execute("ALTER TABLE bots ADD COLUMN status TEXT DEFAULT 'active'")
+            except Exception:
+                pass
+            conn.execute("UPDATE bots SET online = 0 WHERE online IS NULL")
+        conn.execute("UPDATE bots SET status = 'active' WHERE status IS NULL")
         conn.commit()
-    except Exception:
-        pass
-    
-    # Bot status column migration (pending/active)
-    try:
-        if not pg:
-            conn.execute("ALTER TABLE bots ADD COLUMN status TEXT DEFAULT 'active'")
-            conn.execute("UPDATE bots SET status = 'active' WHERE status IS NULL")
-        conn.commit()
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Bot column migration error (non-fatal): {e}")
     
     conn.execute(f"""
         CREATE TABLE IF NOT EXISTS roles (
