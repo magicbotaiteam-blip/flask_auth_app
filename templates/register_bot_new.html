@@ -191,7 +191,7 @@
                             <select class="form-select" id="bot-messaging" name="messaging" required>
                                 <option value="">Select a platform</option>
                                 <option value="Slack" {% if bot and bot.messaging == 'Slack' %}selected{% endif %}>Slack</option>
-                                <option value="Telegram" {% if bot and bot.messaging == 'Telegram' %}selected{% endif %}>Telegram</option>
+                                <option value="Telegram" {% if not bot or bot.messaging == 'Telegram' %}selected{% endif %}>Telegram</option>
                                 <option value="WhatsApp" {% if bot and bot.messaging == 'WhatsApp' %}selected{% endif %}>WhatsApp</option>
                                 <option value="Discord" {% if bot and bot.messaging == 'Discord' %}selected{% endif %}>Discord</option>
                                 <option value="Microsoft Teams" {% if bot and bot.messaging == 'Microsoft Teams' %}selected{% endif %}>Microsoft Teams</option>
