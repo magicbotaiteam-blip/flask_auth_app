@@ -1607,7 +1607,7 @@ def save_bot():
         conn.execute("""
             INSERT INTO bots (user_id, name, email, organization, messaging, llm, token, 
                              description, webhook_url, api_key, config, tags, file_folder, online, status, is_active)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', FALSE)
         """, (user_id, form_data['name'], form_data['email'], form_data['organization'], 
               form_data['messaging'], form_data['llm'], form_data['token'], form_data['description'], 
               form_data['webhook_url'], form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], form_data['online']))
@@ -1681,7 +1681,7 @@ def admin_activate_bot(bot_id):
     
     # Update status to active
     conn.execute(
-        "UPDATE bots SET status = 'active', is_active = 1, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+        "UPDATE bots SET status = 'active', is_active = TRUE, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
         (bot_id,)
     )
     conn.commit()
