@@ -11,6 +11,110 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
+    <style>
+        /* Mobile responsive overrides for advertisement page */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem !important;
+                white-space: normal !important;
+                margin-bottom: 1rem !important;
+            }
+            .hero-section {
+                padding: 60px 0 40px !important;
+            }
+            .hero-subtitle {
+                font-size: 1rem !important;
+            }
+            .hero-subtitle-container .d-inline-block {
+                display: inline !important;
+            }
+            .hero-subtitle-container img {
+                display: none !important;
+            }
+            .hero-section .d-flex.flex-wrap.gap-4 .btn-lg {
+                font-size: 0.9rem;
+                padding: 12px 20px !important;
+            }
+            .hero-section .d-flex.flex-wrap.gap-4 {
+                flex-direction: column;
+                gap: 0.75rem !important;
+            }
+            .hero-section .d-flex.flex-wrap.gap-4 .btn-lg {
+                width: 100%;
+                white-space: normal;
+            }
+            .hero-section .d-flex.align-items-center.gap-4 {
+                flex-direction: column;
+                gap: 0.5rem !important;
+                align-items: flex-start !important;
+            }
+            .features-grid .col-lg-4 {
+                flex: 0 0 50%;
+                max-width: 50%;
+            }
+            .features-grid .col-lg-4 .feature-card {
+                padding: 20px 15px;
+            }
+            .features-grid .col-lg-4 .feature-card i {
+                font-size: 1.5rem !important;
+            }
+            .features-grid .col-lg-4 .feature-card h4 {
+                font-size: 0.9rem;
+            }
+            .features-grid .col-lg-4 .feature-card p {
+                font-size: 0.8rem;
+            }
+            .video-grid .row > div[class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .pricing-cards .row > div[class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+                margin-bottom: 1rem;
+            }
+            section .display-5 {
+                font-size: 1.75rem !important;
+            }
+            section .h1 {
+                font-size: 1.5rem !important;
+            }
+            section .lead {
+                font-size: 0.95rem;
+            }
+            .logo-container img {
+                max-width: 80px !important;
+                height: auto !important;
+            }
+            /* Demo bot cards */
+            .demo-bot-cards .row > div[class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .footer-links {
+                font-size: 0.85rem;
+            }
+            .footer-bottom {
+                font-size: 0.75rem;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .hero-title {
+                font-size: 1.5rem !important;
+            }
+            .hero-section {
+                padding: 40px 0 30px !important;
+            }
+            .features-grid .col-lg-4 {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            section {
+                padding: 40px 0 !important;
+            }
+        }
+    </style>
 </head>
 <body>
     {% include '_navbar_public.html' %}
@@ -28,7 +132,7 @@
                         <div class="logo-text">AI Magic Bot</div>
                     </div>
                     
-                    <h1 class="hero-title" style="white-space: nowrap;">
+                    <h1 class="hero-title">
                         Transform Your Life with <span class="highlight-text">AI-Powered Magic</span>
                     </h1>
                     
@@ -37,7 +141,7 @@
                             An automation platform that 
                             <span class="position-relative d-inline-block" >
                                 can change your life!
-                                <img src="{{ url_for('static', filename='Magic_Bot_AI.png') }}" alt="AI Magic Bot" class="hero-logo-animated magic-spin color-shift" style="position: absolute; top: -90px; right: -580px; width: 280px; height: 280px; border-radius: 40px; object-fit: cover; border: 5px solid rgba(255, 255, 255, 0.3); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);" data-bs-toggle="tooltip" data-bs-placement="top" title="✨ Fun Fact: This logo was created with AI magic! It represents the fusion of technology and creativity that powers our platform.">
+                                <img src="{{ url_for('static', filename='Magic_Bot_AI.png') }}" alt="AI Magic Bot" class="hero-logo-animated magic-spin color-shift" style="position: absolute; top: -50px; right: -480px; width: 280px; height: 280px; border-radius: 40px; object-fit: cover; border: 5px solid rgba(255, 255, 255, 0.3); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);" data-bs-toggle="tooltip" data-bs-placement="top" title="✨ Fun Fact: This logo was created with AI magic! It represents the fusion of technology and creativity that powers our platform.">
                             </span>
                         </p>
                     </div>
