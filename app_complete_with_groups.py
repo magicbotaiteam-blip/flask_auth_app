@@ -262,6 +262,7 @@ def init_db_complete():
             """).fetchone()
             if not chk:
                 print(f"[DB] Added {col_name} column")
+                conn.execute(col_sql)
         else:
             try:
                 conn.execute(col_sql)
