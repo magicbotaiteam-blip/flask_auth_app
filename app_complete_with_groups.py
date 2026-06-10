@@ -251,6 +251,8 @@ def init_db_complete():
         ("ALTER TABLE users ADD COLUMN referral_credits INTEGER DEFAULT 0", "referral_credits"),
         ("ALTER TABLE users ADD COLUMN referral_badge TEXT DEFAULT NULL", "referral_badge"),
         ("ALTER TABLE referrals ADD COLUMN reward_given BOOLEAN DEFAULT FALSE", "reward_given"),
+        ("ALTER TABLE users ADD COLUMN preferred_platform TEXT DEFAULT NULL", "preferred_platform"),
+        ("ALTER TABLE users ADD COLUMN platform_user_id TEXT DEFAULT NULL", "platform_user_id"),
     ]:
         if pg:
             # Check if column exists in PG
@@ -1315,9 +1317,9 @@ def profile():
                 
                 # Hash the password
                 password_hash = generate_password_hash(password)
-                conn.execute("UPDATE users SET email = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (email, password_hash, user_id))
+                conn.execute("UPDATE users SET email = ?, password_hash = ?, preferred_platform = ?, platform_user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (email, password_hash, preferred_platform, platform_user_id, user_id))
             else:
-                conn.execute("UPDATE users SET email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (email, user_id))
+                conn.execute("UPDATE users SET email = ?, preferred_platform = ?, platform_user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (email, preferred_platform, platform_user_id, user_id))
             
             conn.commit()
             flash("Profile updated successfully!", "success")
@@ -1326,7 +1328,7 @@ def profile():
             
     # Get user details
     user = conn.execute("""
-        SELECT id, username, email, provider, created_at
+        SELECT id, username, email, provider, preferred_platform, platform_user_id, created_at
         FROM users WHERE id = ?
     """, (user_id,)).fetchone()
     
