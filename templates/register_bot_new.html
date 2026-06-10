@@ -181,29 +181,10 @@
                         </div>
                     </div>
                     
-                    <!-- Platform Configuration Section -->
+                    <!-- Bot Token (Admin only) -->
+                    {% if role == 'admin' %}
                     <div class="form-section">
-                        <h5><i class="bi bi-gear"></i> Platform Configuration</h5>
-                        
-                        <!-- Messaging Platform -->
-                        <div class="mb-3">
-                            <label for="bot-messaging" class="form-label required-field">Messaging Platform</label>
-                            <select class="form-select" id="bot-messaging" name="messaging" required>
-                                <option value="">Select a platform</option>
-                                <option value="Slack" {% if bot and bot.messaging == 'Slack' %}selected{% endif %}>Slack</option>
-                                <option value="Telegram" {% if not bot or bot.messaging == 'Telegram' %}selected{% endif %}>Telegram</option>
-                                <option value="WhatsApp" {% if bot and bot.messaging == 'WhatsApp' %}selected{% endif %}>WhatsApp</option>
-                                <option value="Discord" {% if bot and bot.messaging == 'Discord' %}selected{% endif %}>Discord</option>
-                                <option value="Microsoft Teams" {% if bot and bot.messaging == 'Microsoft Teams' %}selected{% endif %}>Microsoft Teams</option>
-                                <option value="Multiple" {% if bot and bot.messaging == 'Multiple' %}selected{% endif %}>Multiple Platforms</option>
-                            </select>
-                            <div class="form-text">Primary messaging platform for this bot</div>
-                        </div>
-                        
-
-                        
-                        <!-- Bot Token (Admin only) -->
-                        {% if role == 'admin' %}
+                        <h5><i class="bi bi-gear"></i> Bot Token</h5>
                         <div class="mb-3">
                             <label for="bot-token" class="form-label">Bot Token ID</label>
                             <input type="text" class="form-control" id="bot-token" name="token"
@@ -211,11 +192,11 @@
                                    placeholder="Enter unique bot token">
                             <div class="form-text">Unique identifier for your bot</div>
                         </div>
-                        {% else %}
-                            <!-- For non-admin users, generate token automatically -->
-                            <input type="hidden" name="token" value="{{ bot.token if bot else 'bot_' + range(1, 1000000)|random|string }}">
-                        {% endif %}
                     </div>
+                    {% else %}
+                        <!-- For non-admin users, generate token automatically -->
+                        <input type="hidden" name="token" value="{{ bot.token if bot else 'bot_' + range(1, 1000000)|random|string }}">
+                    {% endif %}
                     
                     <!-- Advanced Settings (Collapsible) -->
                     <div class="form-section">

@@ -1295,6 +1295,8 @@ def profile():
         email = request.form.get("email", "").strip()
         password = request.form.get("password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
+        preferred_platform = request.form.get("preferred_platform", "").strip()
+        platform_user_id = request.form.get("platform_user_id", "").strip()
         
         try:
             # Password validation if provided
@@ -1583,7 +1585,7 @@ def save_bot():
         'name': request.form.get("name"),
         'email': request.form.get("email"),
         'organization': request.form.get("organization"),
-        'messaging': request.form.get("messaging"),
+        'messaging': request.form.get("messaging", "Not Set"),
         'llm': request.form.get("llm"),
         'token': request.form.get("token"),
         'description': request.form.get("description", ""),
@@ -1603,10 +1605,7 @@ def save_bot():
     if not form_data['name'].endswith(SUFFIX):
         form_data['name'] = form_data['name'].strip() + SUFFIX
     
-    if not form_data['messaging']:
-        flash("Messaging Platform is required.")
-        return redirect(url_for("register_bot"))
-    
+
     if not form_data['email']:
         flash("Email Address is required.")
         return redirect(url_for("register_bot"))
