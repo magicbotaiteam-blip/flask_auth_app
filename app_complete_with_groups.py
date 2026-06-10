@@ -2089,7 +2089,7 @@ def users_list():
     sort_order = request.args.get('sort_order', 'asc')
     
     # Validate sort parameters
-    valid_sort_columns = ['id', 'username', 'email', 'created_at', 'updated_at']
+    valid_sort_columns = ['id', 'username', 'email', 'provider', 'preferred_platform', 'platform_user_id', 'created_at', 'updated_at', 'user_role']
     if sort_by not in valid_sort_columns:
         sort_by = 'id'
     
@@ -2109,7 +2109,10 @@ def users_list():
     total_pages = (total_count + per_page - 1) // per_page
     
     # Build SQL query with sorting and role
-    order_clause = f"u.{sort_by} {sort_order}"
+    if sort_by == 'user_role':
+        order_clause = f"r.name {sort_order}"
+    else:
+        order_clause = f"u.{sort_by} {sort_order}"
     query = f"""
         SELECT u.*, COALESCE(r.name, 'customer') as user_role
         FROM users u
@@ -2231,6 +2234,8 @@ def user_edit(user_id):
         new_role = request.form.get("role", "customer")
         password = request.form.get("password", "").strip()
         confirm_password = request.form.get("confirm_password", "").strip()
+        preferred_platform = request.form.get("preferred_platform", "").strip()
+        platform_user_id = request.form.get("platform_user_id", "").strip()
         
         try:
             # Password validation if provided
@@ -2252,9 +2257,9 @@ def user_edit(user_id):
                     return redirect(url_for('user_edit', user_id=user_id))
                 
                 password_hash = generate_password_hash(password)
-                conn.execute("UPDATE users SET email = ?, password_hash = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (email, password_hash, user_id))
+                conn.execute("UPDATE users SET email = ?, password_hash = ?, preferred_platform = ?, platform_user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (email, password_hash, preferred_platform, platform_user_id, user_id))
             else:
-                conn.execute("UPDATE users SET email = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (email, user_id))
+                conn.execute("UPDATE users SET email = ?, preferred_platform = ?, platform_user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", (email, preferred_platform, platform_user_id, user_id))
                 
             role_id = conn.execute("SELECT id FROM roles WHERE name = ?", (new_role,)).fetchone()['id']
             conn.execute("DELETE FROM user_roles WHERE user_id = ?", (user_id,))

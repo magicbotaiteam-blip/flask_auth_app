@@ -61,7 +61,14 @@
                                         {% endif %}
                                     </a>
                                 </th>
-                                <th>Provider</th>
+                                <th>
+                                    <a href="?sort_by=provider&sort_order={{ 'desc' if sort_by == 'provider' and sort_order == 'asc' else 'asc' }}" class="text-white text-decoration-none">
+                                        Provider
+                                        {% if sort_by == 'provider' %}
+                                            <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
                                 <th>
                                     <a href="?sort_by=username&sort_order={{ 'desc' if sort_by == 'username' and sort_order == 'asc' else 'asc' }}" class="text-white text-decoration-none">
                                         Username
@@ -70,8 +77,22 @@
                                         {% endif %}
                                     </a>
                                 </th>
-                                <th>Email</th>
-                                <th>Role</th>
+                                <th>
+                                    <a href="?sort_by=email&sort_order={{ 'desc' if sort_by == 'email' and sort_order == 'asc' else 'asc' }}" class="text-white text-decoration-none">
+                                        Email
+                                        {% if sort_by == 'email' %}
+                                            <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?sort_by=user_role&sort_order={{ 'desc' if sort_by == 'user_role' and sort_order == 'asc' else 'asc' }}" class="text-white text-decoration-none">
+                                        Role
+                                        {% if sort_by == 'user_role' %}
+                                            <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
                                 <th>
                                     <a href="?sort_by=created_at&sort_order={{ 'desc' if sort_by == 'created_at' and sort_order == 'asc' else 'asc' }}" class="text-white text-decoration-none">
                                         Created At
@@ -84,6 +105,22 @@
                                     <a href="?sort_by=updated_at&sort_order={{ 'desc' if sort_by == 'updated_at' and sort_order == 'asc' else 'asc' }}" class="text-white text-decoration-none">
                                         Updated At
                                         {% if sort_by == 'updated_at' %}
+                                            <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?sort_by=preferred_platform&sort_order={{ 'desc' if sort_by == 'preferred_platform' and sort_order == 'asc' else 'asc' }}" class="text-white text-decoration-none">
+                                        Platform
+                                        {% if sort_by == 'preferred_platform' %}
+                                            <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
+                                        {% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a href="?sort_by=platform_user_id&sort_order={{ 'desc' if sort_by == 'platform_user_id' and sort_order == 'asc' else 'asc' }}" class="text-white text-decoration-none">
+                                        Platform User ID
+                                        {% if sort_by == 'platform_user_id' %}
                                             <i class="bi bi-arrow-{{ 'up' if sort_order == 'asc' else 'down' }}"></i>
                                         {% endif %}
                                     </a>
@@ -101,6 +138,8 @@
                                 <td><span class="badge bg-{{ 'danger' if user.user_role == 'admin' else 'info' }}">{{ user.user_role }}</span></td>
                                 <td>{{ user.created_at }}</td>
                                 <td>{{ user.updated_at }}</td>
+                                <td>{{ user.preferred_platform or '' }}</td>
+                                <td>{{ user.platform_user_id or '' }}</td>
                                 <td>
                                     <a href="/users/{{ user.id }}/edit" class="btn btn-sm btn-outline-primary me-1" title="Edit">
                                         <i class="bi bi-pencil"></i>
@@ -112,7 +151,7 @@
                             </tr>
                             {% else %}
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="10" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2"></i>
                                         No users found.
