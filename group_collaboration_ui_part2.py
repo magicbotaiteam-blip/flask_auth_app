@@ -679,6 +679,10 @@ def create_group_collaboration_ui_part2(app):
                 group = conn.execute("SELECT settings FROM groups WHERE id = ?", (group_id,)).fetchone()
                 current_settings = json.loads(group['settings']) if group['settings'] else {}
 
+                name = data.get("name", "").strip()
+                description = data.get("description", "").strip()
+                group_chat_id = data.get("group_chat_id", "").strip()
+
                 updated_settings = {
                     **current_settings,
                     'allow_public_invites': 'allow_public_invites' in data,
@@ -689,9 +693,9 @@ def create_group_collaboration_ui_part2(app):
 
                 conn.execute("""
                     UPDATE groups
-                    SET settings = ?, updated_at = CURRENT_TIMESTAMP
+                    SET name = ?, description = ?, group_chat_id = ?, settings = ?, updated_at = CURRENT_TIMESTAMP
                     WHERE id = ?
-                """, (json.dumps(updated_settings), group_id))
+                """, (name, description, group_chat_id or None, json.dumps(updated_settings), group_id))
 
                 log_group_activity(group_id, session["user_id"], 'settings_updated', {
                     'updated_fields': list(data.keys())

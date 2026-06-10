@@ -336,6 +336,10 @@ def create_group_collaboration_ui(app):
                 flash("Group name is required.", "error")
                 return render_template("create_group.html", username=session.get("username"))
             
+            if not group_chat_id:
+                flash("Group Chat ID is required.", "error")
+                return render_template("create_group.html", username=session.get("username"))
+            
             user_id = session["user_id"]
             
             # Check if group name already exists for this user

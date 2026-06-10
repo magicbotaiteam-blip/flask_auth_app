@@ -152,7 +152,7 @@
                             <label for="bot-name" class="form-label required-field">Bot Name</label>
                             <input type="text" class="form-control" id="bot-name" name="name" 
                                    value="{{ bot.name if bot else '' }}" 
-                                   placeholder="Enter bot name. The suffix _magicAIbot will be automatically added." required
+                                   placeholder="Name must end with `bot` or `Bot` (e.g., TetrisBot, tetris_bot)" required
                             <div class="form-text">A unique name for your bot</div>
                         </div>
                         
@@ -324,18 +324,25 @@
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('botForm');
             
-            // Bot name suffix helper
-            function ensureBotSuffix(name) {
-                const suffix = '_magicAIbot';
-                return name.endsWith(suffix) ? name : name + suffix;
+            // Bot name suffix validation - must end with "bot" or "Bot"
+            function isValidBotName(name) {
+                return name.toLowerCase().endsWith('bot');
             }
             
             // Form validation
             form.addEventListener('submit', function(event) {
-                // Append suffix to bot name before validation
                 const nameInput = document.getElementById('bot-name');
-                if (nameInput && nameInput.value.trim()) {
-                    nameInput.value = ensureBotSuffix(nameInput.value.trim());
+                if (nameInput) {
+                    const name = nameInput.value.trim();
+                    if (name && !isValidBotName(name)) {
+                        event.preventDefault();
+                        nameInput.classList.add('is-invalid');
+                        const feedback = nameInput.nextElementSibling;
+                        if (feedback && feedback.classList.contains('invalid-feedback')) {
+                            feedback.textContent = 'Bot name must end with "bot" or "Bot" (e.g., TetrisBot, tetris_bot)';
+                        }
+                        return;
+                    }
                 }
                 
                 let isValid = true;
@@ -398,10 +405,8 @@
                 
                 nameInput.addEventListener('input', function() {
                     clearTimeout(nameCheckTimer);
-                    const raw = this.value.trim();
-                    if (raw.length < 2) return;
-                    // Check with the suffix appended (matches what will be saved)
-                    const name = raw.endsWith('_magicAIbot') ? raw : raw + '_magicAIbot';
+                    const name = this.value.trim();
+                    if (name.length < 2) return;
                     
                     nameCheckTimer = setTimeout(function() {
                         fetch('/check-bot-name?name=' + encodeURIComponent(name) + '&exclude={{ bot.id if bot else "" }}')

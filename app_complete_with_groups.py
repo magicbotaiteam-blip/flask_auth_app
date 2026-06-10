@@ -1601,10 +1601,10 @@ def save_bot():
         flash("Bot Name is required.")
         return redirect(url_for("register_bot"))
     
-    # Append _magicAIbot suffix if not already present
-    SUFFIX = '_magicAIbot'
-    if not form_data['name'].endswith(SUFFIX):
-        form_data['name'] = form_data['name'].strip() + SUFFIX
+    # Validate bot name ends with "bot" or "Bot"
+    if not form_data['name'].strip().lower().endswith('bot'):
+        flash('Bot name must end with "bot" or "Bot" (e.g., TetrisBot, tetris_bot).')
+        return redirect(url_for("register_bot", bot_id=bot_id) if bot_id else url_for("register_bot"))
     
 
     if not form_data['email']:
