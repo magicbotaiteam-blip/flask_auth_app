@@ -131,6 +131,25 @@ def init_group_db(conn=None):
         )
     """)
     
+    # Migration: add group_chat_id column
+    for col_sql, col_name in [
+        ("ALTER TABLE groups ADD COLUMN group_chat_id TEXT DEFAULT NULL", "group_chat_id"),
+    ]:
+        if pg:
+            chk = conn.execute(f"""
+                SELECT column_name FROM information_schema.columns
+                WHERE table_name = 'groups' AND column_name = '{col_name}'
+            """).fetchone()
+            if not chk:
+                print(f"[DB] Added {col_name} column to groups")
+                conn.execute(col_sql)
+        else:
+            try:
+                conn.execute(col_sql)
+                print(f"[DB] Added {col_name} column to groups")
+            except Exception:
+                pass
+
     if _own_conn:
         conn.commit()
         conn.close()
@@ -311,6 +330,7 @@ def create_group_collaboration_ui(app):
         if request.method == "POST":
             name = request.form.get("name", "").strip()
             description = request.form.get("description", "").strip()
+            group_chat_id = request.form.get("group_chat_id", "").strip()
             
             if not name:
                 flash("Group name is required.", "error")
@@ -332,9 +352,9 @@ def create_group_collaboration_ui(app):
             conn = get_db_connection()
             try:
                 cursor = conn.execute("""
-                    INSERT INTO groups (name, description, created_by, settings)
-                    VALUES (?, ?, ?, ?)
-                """, (name, description, user_id, json.dumps({
+                    INSERT INTO groups (name, description, created_by, group_chat_id, settings)
+                    VALUES (?, ?, ?, ?, ?)
+                """, (name, description, user_id, group_chat_id or None, json.dumps({
                     "allow_public_invites": False,
                     "default_role": "member",
                     "bot_sharing": True,
