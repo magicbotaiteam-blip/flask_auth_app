@@ -1304,7 +1304,7 @@ def profile():
             conn.close()
             return redirect(url_for('profile'))
 
-        if not platform_user_id:
+        if not platform_user_id or platform_user_id == 'None':
             flash("Platform User ID is required.", "error")
             conn.close()
             return redirect(url_for('profile'))
@@ -2252,7 +2252,7 @@ def user_edit(user_id):
             conn.close()
             return redirect(url_for('user_edit', user_id=user_id))
 
-        if not platform_user_id:
+        if not platform_user_id or platform_user_id == 'None':
             flash("Platform User ID is required.", "error")
             conn.close()
             return redirect(url_for('user_edit', user_id=user_id))

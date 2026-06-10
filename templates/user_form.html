@@ -124,7 +124,7 @@
                     <div class="mb-3">
                         <label class="form-label">Platform User ID *</label>
                         <input type="text" name="platform_user_id" class="form-control" 
-                               value="{{ user.platform_user_id if user else '' }}" 
+                               value="{{ user.platform_user_id or '' }}" 
                                placeholder="Username or ID on the platform" required>
                     </div>
                     
