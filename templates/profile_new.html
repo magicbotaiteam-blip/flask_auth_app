@@ -132,10 +132,9 @@
                             </div>
                             
                             <div class="mb-3">
-                                <label for="preferred_platform" class="form-label">Preferred Platform</label>
-                                <select class="form-select" id="preferred_platform" name="preferred_platform">
-                                    <option value="" {% if not user.preferred_platform %}selected{% endif %}>-- Select Platform --</option>
-                                    <option value="Telegram" {% if user.preferred_platform == 'Telegram' %}selected{% endif %}>Telegram</option>
+                                <label for="preferred_platform" class="form-label">Preferred Platform *</label>
+                                <select class="form-select" id="preferred_platform" name="preferred_platform" required>
+                                    <option value="Telegram" {% if not user.preferred_platform or user.preferred_platform == 'Telegram' %}selected{% endif %}>Telegram</option>
                                     <option value="WhatsApp" {% if user.preferred_platform == 'WhatsApp' %}selected{% endif %}>WhatsApp</option>
                                     <option value="WeChat" {% if user.preferred_platform == 'WeChat' %}selected{% endif %}>WeChat</option>
                                     <option value="Discord" {% if user.preferred_platform == 'Discord' %}selected{% endif %}>Discord</option>
@@ -148,8 +147,8 @@
                             </div>
 
                             <div class="mb-3">
-                                <label for="platform_user_id" class="form-label">User ID on {{ 'Selected' if user.preferred_platform else 'that' }} Platform</label>
-                                <input type="text" class="form-control" id="platform_user_id" name="platform_user_id" value="{{ user.platform_user_id or '' }}" placeholder="Your username or ID on the platform">
+                                <label for="platform_user_id" class="form-label">User ID on Telegram *</label>
+                                <input type="text" class="form-control" id="platform_user_id" name="platform_user_id" value="{{ user.platform_user_id or '' }}" placeholder="Your username or ID on the platform" required>
                                 <div class="form-text">Enter your username or user ID so we can connect with you there</div>
                             </div>
 

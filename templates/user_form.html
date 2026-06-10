@@ -62,7 +62,7 @@
                         <label class="form-label">Password (leave blank to keep current)</label>
                         <div class="input-group">
                             <input type="password" name="password" id="password" class="form-control" 
-                                   placeholder="Enter new password">
+                                   placeholder="Enter new password" autocomplete="new-password">
                             <button class="btn btn-outline-secondary" type="button" id="togglePassword">
                                 <i class="bi bi-eye"></i>
                             </button>
@@ -82,13 +82,12 @@
                         <label class="form-label">Confirm Password</label>
                         <div class="input-group">
                             <input type="password" name="confirm_password" id="confirm_password" class="form-control" 
-                                   placeholder="Confirm new password">
+                                   placeholder="Confirm new password" autocomplete="new-password">
                             <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
                         <div class="form-text" id="passwordMatchMessage">
-                            Passwords must match
                         </div>
                     </div>
                     
@@ -109,10 +108,9 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Preferred Platform</label>
-                        <select name="preferred_platform" class="form-select">
-                            <option value="" {% if not user.preferred_platform %}selected{% endif %}>-- None --</option>
-                            <option value="Telegram" {% if user.preferred_platform == 'Telegram' %}selected{% endif %}>Telegram</option>
+                        <label class="form-label">Preferred Platform *</label>
+                        <select name="preferred_platform" class="form-select" required>
+                            <option value="Telegram" {% if not user.preferred_platform or user.preferred_platform == 'Telegram' %}selected{% endif %}>Telegram</option>
                             <option value="WhatsApp" {% if user.preferred_platform == 'WhatsApp' %}selected{% endif %}>WhatsApp</option>
                             <option value="WeChat" {% if user.preferred_platform == 'WeChat' %}selected{% endif %}>WeChat</option>
                             <option value="Discord" {% if user.preferred_platform == 'Discord' %}selected{% endif %}>Discord</option>
@@ -124,10 +122,10 @@
                     </div>
                     
                     <div class="mb-3">
-                        <label class="form-label">Platform User ID</label>
+                        <label class="form-label">Platform User ID *</label>
                         <input type="text" name="platform_user_id" class="form-control" 
                                value="{{ user.platform_user_id if user else '' }}" 
-                               placeholder="Username or ID on the platform">
+                               placeholder="Username or ID on the platform" required>
                     </div>
                     
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -227,7 +225,7 @@
             const message = document.getElementById('passwordMatchMessage');
             
             if (password === '' && confirmPassword === '') {
-                message.textContent = 'Passwords must match';
+                message.innerHTML = '&nbsp;';
                 message.className = 'form-text';
                 return;
             }
