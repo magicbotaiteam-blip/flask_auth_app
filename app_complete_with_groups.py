@@ -21,6 +21,11 @@ from db import get_conn as get_db_connection, is_postgres as _is_pg_db, connect 
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
 S3_ENABLED = bool(os.environ.get("S3_BUCKET_NAME")) or os.path.exists("/.dockerenv")
 
+# Only enable S3 if credentials are available (env vars or IAM role)
+has_creds = bool(os.environ.get("AWS_ACCESS_KEY_ID")) or bool(os.environ.get("AWS_SECRET_ACCESS_KEY"))
+if has_creds or not os.path.exists("/.dockerenv"):
+    S3_ENABLED = S3_ENABLED and has_creds
+
 s3_client = None
 if S3_ENABLED:
     try:
@@ -33,8 +38,6 @@ if S3_ENABLED:
         print(f"S3 storage not available, falling back to local filesystem: {e}")
         S3_ENABLED = False
         s3_client = None
-        # Remove env so local devs don't retry S3
-        os.environ.pop("S3_BUCKET_NAME", None)
 
 # Load .env file for local dev (silently ignore if not present, e.g. in Docker)
 # Skip in production when env vars are set via build args or system env.
@@ -666,7 +669,7 @@ def admin_contacts():
     
     # Get all contacts
     cursor.execute("""
-        SELECT id, name, email, company, message, created_at, status
+        SELECT id, name, email, company, message, created_at, status, ip_address
         FROM contacts
         ORDER BY created_at DESC
         LIMIT 100
@@ -685,13 +688,16 @@ def admin_contacts():
             "company": contact[3] if contact[3] else "Not specified",
             "message": contact[4],
             "created_at": contact[5],
-            "status": contact[6]
+            "status": contact[6],
+            "ip_address": contact[7] if len(contact) > 7 and contact[7] else "N/A"
         })
     
     from datetime import datetime
     return render_template("admin_contacts.html", 
                          contacts=contacts_list,
-                         now=datetime.now())
+                         now=datetime.now(),
+                         username=session.get("username"),
+                         role=session.get("role", "customer"))
 
 @app.route("/api/contacts/<int:contact_id>/status", methods=["PUT"])
 def update_contact_status(contact_id):
@@ -740,6 +746,52 @@ def update_contact_status(contact_id):
             "success": False,
             "message": "An error occurred"
         }), 500
+
+@app.route("/api/contacts/<int:contact_id>", methods=["GET"])
+def get_contact_detail(contact_id):
+    """Get single contact details (admin only)"""
+    if "username" not in session:
+        return jsonify({"success": False, "message": "Authentication required"}), 401
+    
+    if session.get("role") != "admin":
+        return jsonify({"success": False, "message": "Admin privileges required"}), 403
+    
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, name, email, company, message, created_at, status, ip_address, user_agent
+            FROM contacts WHERE id = ?
+        """, (contact_id,))
+        row = cursor.fetchone()
+        conn.close()
+        
+        if not row:
+            return jsonify({"success": False, "message": "Contact not found"}), 404
+        
+        # Auto-mark as read when viewed
+        if row[6] == "new":
+            cursor = conn.cursor()
+            cursor.execute("UPDATE contacts SET status = 'read' WHERE id = ?", (contact_id,))
+            conn.commit()
+        
+        return jsonify({
+            "success": True,
+            "contact": {
+                "id": row[0],
+                "name": row[1],
+                "email": row[2],
+                "company": row[3] or "Not specified",
+                "message": row[4],
+                "created_at": row[5],
+                "status": row[6],
+                "ip_address": row[7] or "N/A",
+                "user_agent": row[8] or "N/A"
+            }
+        })
+    except Exception as e:
+        print(f"[CONTACT DETAIL ERROR] {str(e)}")
+        return jsonify({"success": False, "message": "An error occurred"}), 500
 
 @app.route("/legal/privacy")
 def legal_privacy():
@@ -1736,17 +1788,20 @@ def bot_detail(bot_id):
 @login_required
 def bot_usage(bot_id):
     """View usage statistics for a bot's agent"""
-    user_id = session["user_id"]
     role = session.get("role", "customer")
+    
+    # Restrict to admins only (usage data file may not exist for non-admins)
+    if role != "admin":
+        flash("Usage statistics are only available for admin users.", "error")
+        return redirect(url_for("my_bots"))
+    
+    user_id = session["user_id"]
     
     conn = get_db_connection()
     cursor = conn.cursor()
     
     # Get bot
-    if role == "admin":
-        cursor.execute("SELECT * FROM bots WHERE id = ?", (bot_id,))
-    else:
-        cursor.execute("SELECT * FROM bots WHERE id = ? AND user_id = ?", (bot_id, user_id))
+    cursor.execute("SELECT * FROM bots WHERE id = ?", (bot_id,))
     
     bot = cursor.fetchone()
     conn.close()
@@ -1762,7 +1817,7 @@ def bot_usage(bot_id):
     # Agent names in trajectory files are lowercased, normalize
     agent_name_lower = agent_name.lower()
     import json, os
-    usage_file = "/Users/siyang/.openclaw/workspace-coding/usage_data.json"
+    usage_file = os.environ.get("USAGE_DATA_FILE", "/Users/siyang/.openclaw/workspace-coding/usage_data.json")
     
     if not os.path.exists(usage_file):
         return render_template(
@@ -2249,17 +2304,30 @@ def user_bots(user_id):
 
 @app.route("/usage")
 def usage_page():
-    return send_from_directory("/Users/siyang/.openclaw/workspace-coding", "usage.html")
+    if session.get("role") != "admin":
+        flash("Access denied. Admin privileges required.", "error")
+        return redirect(url_for("index"))
+    return render_template("usage.html")
 
 @app.route("/usage_data.json")
 def usage_data():
-    return send_from_directory("/Users/siyang/.openclaw/workspace-coding", "usage_data.json")
+    if session.get("role") != "admin":
+        return jsonify({"error": "Access denied. Admin privileges required."}), 403
+    import os
+    usage_dir = os.environ.get("USAGE_DATA_DIR", "/Users/siyang/.openclaw/workspace-coding")
+    usage_file = os.path.join(usage_dir, "usage_data.json")
+    if not os.path.exists(usage_file):
+        return jsonify({"error": "Usage data file not found. The usage report may not have been generated yet."}), 404
+    return send_from_directory(usage_dir, "usage_data.json")
 
 @app.route("/refresh-usage")
 def refresh_usage():
+    if session.get("role") != "admin":
+        flash("Access denied. Admin privileges required.", "error")
+        return redirect(url_for("index"))
     import subprocess
     result = subprocess.run(
-        ["bash", "/Users/siyang/.openclaw/workspace-coding/refresh-usage.sh"],
+        ["bash", os.environ.get("REFRESH_USAGE_SCRIPT", "/Users/siyang/.openclaw/workspace-coding/refresh-usage.sh")],
         capture_output=True, text=True, timeout=30
     )
     return f"<pre>stdout:\n{result.stdout}\nstderr:\n{result.stderr}</pre>"

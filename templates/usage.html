@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenClaw Agent Usage</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --card-border: #334155;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --accent: #7c3aed;
+            --accent-light: #a78bfa;
+            --green: #10b981;
+            --blue: #3b82f6;
+            --orange: #f59e0b;
+            --red: #ef4444;
+        }
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 2rem;
+        }
+        .header {
+            margin-bottom: 2rem;
+        }
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: #fff;
+        }
+        .header p {
+            color: var(--text-muted);
+            margin: 0;
+        }
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .summary-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        .summary-card .label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+        }
+        .summary-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .summary-card .sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .time-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .time-tab {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 0.5rem 1.25rem;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.15s;
+        }
+        .time-tab.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: #fff;
+        }
+        .agent-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 1rem;
+        }
+        .agent-card {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+        }
+        .agent-card .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+        .agent-card .agent-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .agent-card .agent-tokens {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .agent-card .agent-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .agent-card .stat-box {
+            text-align: center;
+        }
+        .agent-card .stat-box .stat-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .agent-card .stat-box .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+        .agent-card .chart-container {
+            height: 80px;
+            margin-top: 0.5rem;
+        }
+        .no-data {
+            color: var(--text-muted);
+            text-align: center;
+            padding: 2rem;
+        }
+        .update-time {
+            color: var(--text-muted);
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+        }
+        .agent-cost {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .cost-positive { color: var(--orange); }
+        .refresh-btn {
+            background: var(--card);
+            border: 1px solid var(--card-border);
+            border-radius: 8px;
+            padding: 0.5rem 1rem;
+            color: var(--text);
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+        .refresh-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+    </style>
+</head>
+<body>
+
+<div class="header d-flex justify-content-between align-items-start">
+    <div>
+        <h1>🤖 OpenClaw Agent Usage</h1>
+        <p>Token and cost tracking across all agents</p>
+    </div>
+    <button class="refresh-btn" onclick="refreshData()">🔄 Refresh</button>
+</div>
+
+<div class="summary-cards" id="summaryCards">
+    <div class="summary-card">
+        <div class="label">Total Agents</div>
+        <div class="value" id="totalAgents">—</div>
+    </div>
+    <div class="summary-card">
+        <div class="label">Total Model Calls</div>
+        <div class="value" id="totalCalls">—</div>
+    </div>
+    <div class="summary-card">
+        <div class="label">Total Tokens</div>
+        <div class="value" id="totalTokens">—</div>
+        <div class="sub" id="totalTokensDetail"></div>
+    </div>
+    <div class="summary-card">
+        <div class="label">Total Cost</div>
+        <div class="value" id="totalCost">—</div>
+        <div class="sub">Estimated API cost</div>
+    </div>
+</div>
+
+<div class="time-tabs" id="timeTabs">
+    <div class="time-tab active" data-period="month">This Month</div>
+    <div class="time-tab" data-period="week">This Week</div>
+    <div class="time-tab" data-period="day">Today</div>
+    <div class="time-tab" data-period="all">All Time</div>
+</div>
+
+<div class="update-time" id="updateTime"></div>
+
+<div id="agentCards" class="agent-grid"></div>
+
+<script>
+// DeepSeek pricing (per 1M tokens)
+const COST_PER_OUTPUT_TOKEN = 0.00000110; // $1.10/M output tokens
+
+let rawData = null;
+let currentPeriod = 'month';
+
+function formatTokens(n) {
+    if (n >= 1000000000) return (n / 1000000000).toFixed(2) + 'B';
+    if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
+}
+
+function formatCurrency(n) {
+    if (n === 0) return '$0.00';
+    if (n < 0.01) return '$' + n.toFixed(4);
+    return '$' + n.toFixed(2);
+}
+
+function filterByPeriod(timestamp, period) {
+    if (period === 'all') return true;
+    const d = new Date(timestamp);
+    const now = new Date();
+    const ms = period === 'month' ? 30 * 24 * 60 * 60 * 1000
+              : period === 'week' ? 7 * 24 * 60 * 60 * 1000
+              : 24 * 60 * 60 * 1000;
+    return (now - d) <= ms;
+}
+
+function processData(period) {
+    if (!rawData || !Array.isArray(rawData) || rawData.length === 0) {
+        document.getElementById('agentCards').innerHTML = '<div class="no-data">No usage data found. Run <code>bash usage-report.sh</code> first.</div>';
+        return;
+    }
+
+    const agents = rawData;
+    let grandTokens = 0;
+    let grandCalls = 0;
+    let grandCost = 0;
+
+    let cardsHtml = '';
+
+    agents.forEach(agent => {
+        const daily = (agent.daily || []).filter(d => filterByPeriod(d.date, period));
+        if (daily.length === 0) return;
+
+        const periodTokens = daily.reduce((s, d) => s + d.tokens, 0);
+        const periodCalls = daily.reduce((s, d) => s + d.calls, 0);
+        const periodCost = daily.reduce((s, d) => s + d.cost, 0);
+        const estCost = periodCost > 0 ? periodCost : 0;
+
+        grandTokens += periodTokens;
+        grandCalls += periodCalls;
+        grandCost += estCost;
+
+        const chartLabels = daily.map(d => d.date.substring(5));
+        const chartData = daily.map(d => d.tokens);
+        const cardId = 'ch-' + agent.agent.replace(/[^a-zA-Z0-9]/g, '-');
+
+        // Estimate input/output split
+        const avgInPct = agent.total_tokens > 0 ? agent.total_input / agent.total_tokens : 0.8;
+        const periodInput = Math.round(periodTokens * avgInPct);
+        const periodOutput = periodTokens - periodInput;
+
+        cardsHtml += `
+            <div class="agent-card">
+                <div class="agent-header">
+                    <span class="agent-name">${agent.agent}</span>
+                    <span class="agent-cost ${estCost > 0 ? 'cost-positive' : ''}">${formatCurrency(estCost)}</span>
+                </div>
+                <div class="agent-stats">
+                    <div class="stat-box">
+                        <div class="stat-value">${formatTokens(periodTokens)}</div>
+                        <div class="stat-label">Tokens</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${periodCalls}</div>
+                        <div class="stat-label">Calls</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value">${daily.length}</div>
+                        <div class="stat-label">Days Active</div>
+                    </div>
+                </div>
+                <div class="agent-tokens">
+                    ${formatTokens(periodInput)} in / ${formatTokens(periodOutput)} out
+                    ${agent.models ? ' · ' + agent.models.join(', ') : ''}
+                </div>
+                <div class="chart-container">
+                    <canvas id="${cardId}"></canvas>
+                </div>
+            </div>
+        `;
+
+        setTimeout(() => {
+            const canvas = document.getElementById(cardId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        label: 'Tokens',
+                        data: chartData,
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.1)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 2,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: {
+                            display: chartLabels.length > 1,
+                            ticks: { color: '#94a3b8', font: { size: 10 }, maxTicksLimit: 7 },
+                            grid: { display: false }
+                        },
+                        y: {
+                            display: false,
+                            beginAtZero: true,
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }, 100);
+    });
+
+    document.getElementById('totalAgents').textContent = agents.length;
+    document.getElementById('totalCalls').textContent = grandCalls;
+    document.getElementById('totalTokens').textContent = formatTokens(grandTokens);
+    document.getElementById('totalTokensDetail').textContent = `Across ${agents.length} agents`;
+    document.getElementById('totalCost').textContent = formatCurrency(grandCost);
+
+    document.getElementById('agentCards').innerHTML = cardsHtml || '<div class="no-data">No activity in the selected period.</div>';
+}
+
+async function loadData() {
+    try {
+        const resp = await fetch('usage_data.json?' + Date.now());
+        rawData = await resp.json();
+        processData(currentPeriod);
+        document.getElementById('updateTime').textContent = 'Last refreshed: ' + new Date().toLocaleString();
+    } catch (e) {
+        document.getElementById('agentCards').innerHTML = `<div class="no-data">Error loading data: ${e.message}. Run <code>bash usage-report.sh</code> first.</div>`;
+    }
+}
+
+function refreshData() {
+    document.getElementById('agentCards').innerHTML = '<div class="no-data">Refreshing...</div>';
+    loadData();
+}
+
+document.getElementById('timeTabs').addEventListener('click', function(e) {
+    const tab = e.target.closest('.time-tab');
+    if (!tab) return;
+    document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentPeriod = tab.dataset.period;
+    processData(currentPeriod);
+});
+
+loadData();
+</script>
+
+</body>
+</html>

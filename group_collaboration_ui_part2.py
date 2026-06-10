@@ -195,6 +195,21 @@ def create_group_collaboration_ui_part2(app):
         
         return redirect(url_for("group_members", group_id=group_id))
 
+    @app.route("/groups/<int:group_id>/invite/revoke/<token>", methods=["POST"])
+    @group_admin_required
+    def revoke_invitation(group_id, token):
+        """Revoke a pending invitation"""
+        conn = get_db_connection()
+        try:
+            conn.execute("DELETE FROM group_invitations WHERE token = ? AND group_id = ? AND status = 'pending'", (token, group_id))
+            conn.commit()
+            flash("Invitation revoked.", "success")
+        except Exception as e:
+            flash("Failed to revoke invitation.", "error")
+        finally:
+            conn.close()
+        return redirect(url_for("group_members", group_id=group_id))
+
     @app.route("/groups/invite/accept/<token>")
     def accept_group_invitation(token):
         """Accept group invitation - handles both logged in and new users"""
@@ -322,7 +337,7 @@ def create_group_collaboration_ui_part2(app):
             FROM group_invitations ti
             LEFT JOIN users u ON ti.invited_by = u.id
             WHERE ti.group_id = ? AND ti.status = 'pending'
-            ORDER BY ti.invited_at DESC
+            ORDER BY ti.created_at DESC
         """, (group_id,)).fetchall()
 
         user_role = conn.execute("""
@@ -338,7 +353,8 @@ def create_group_collaboration_ui_part2(app):
                              invitations=invitations,
                              user_role=user_role["role"] if user_role else None,
                              is_admin=(session.get("role") == "admin"),
-                             username=session.get("username"))
+                             username=session.get("username"),
+                             role=session.get("role", "customer"))
 
     @app.route("/groups/<int:group_id>/bots")
     @group_required

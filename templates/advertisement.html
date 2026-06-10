@@ -12,106 +12,203 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* Mobile responsive overrides for advertisement page */
-        @media (max-width: 768px) {
+        /* 
+         * Mobile responsive styles for advertisement page
+         * Applies to all screen sizes through cascading breakpoints
+         */
+
+        /* Small devices (phones, <768px) */
+        @media (max-width: 767.98px) {
+            /* ===== Hero Section ===== */
+            .hero-section {
+                padding: 50px 0 30px !important;
+            }
             .hero-title {
-                font-size: 2rem !important;
+                font-size: 1.75rem !important;
                 white-space: normal !important;
                 margin-bottom: 1rem !important;
-            }
-            .hero-section {
-                padding: 60px 0 40px !important;
+                text-align: center;
             }
             .hero-subtitle {
                 font-size: 1rem !important;
+                text-align: center;
             }
-            .hero-subtitle-container .d-inline-block {
-                display: inline !important;
-            }
-            .hero-subtitle-container img {
+            .hero-subtitle-container img,
+            .hero-section .position-absolute[style*="radial-gradient"] {
                 display: none !important;
             }
-            .hero-section .d-flex.flex-wrap.gap-4 .btn-lg {
-                font-size: 0.9rem;
-                padding: 12px 20px !important;
-            }
-            .hero-section .d-flex.flex-wrap.gap-4 {
-                flex-direction: column;
+            
+            /* Hero CTA button */
+            .hero-section .d-flex.flex-wrap.gap-4.mb-5 {
+                flex-direction: column !important;
                 gap: 0.75rem !important;
+                align-items: stretch !important;
             }
-            .hero-section .d-flex.flex-wrap.gap-4 .btn-lg {
-                width: 100%;
+            .hero-section .d-flex.flex-wrap.gap-4.mb-5 .btn-lg {
+                width: 100% !important;
+                font-size: 0.9rem;
+                padding: 12px 16px !important;
                 white-space: normal;
             }
+            
+            /* Hero feature bar (How to Get Started link) */
             .hero-section .d-flex.align-items-center.gap-4 {
-                flex-direction: column;
-                gap: 0.5rem !important;
-                align-items: flex-start !important;
+                flex-direction: row !important;
+                flex-wrap: wrap !important;
+                gap: 0.5rem 1rem !important;
+                justify-content: center !important;
             }
-            .features-grid .col-lg-4 {
-                flex: 0 0 50%;
-                max-width: 50%;
+            .hero-section .d-flex.align-items-center.gap-4 a {
+                white-space: nowrap;
+                font-size: 0.85rem;
+                padding: 4px 0;
             }
-            .features-grid .col-lg-4 .feature-card {
-                padding: 20px 15px;
+            
+            /* ===== Navbar ===== */
+            .navbar .navbar-collapse {
+                background: rgba(15, 23, 42, 0.98);
+                padding: 1rem;
+                border-radius: 12px;
+                margin-top: 0.5rem;
+                max-height: 80vh;
+                overflow-y: auto;
             }
-            .features-grid .col-lg-4 .feature-card i {
-                font-size: 1.5rem !important;
+            .navbar .navbar-nav {
+                align-items: stretch !important;
+                gap: 0.5rem;
             }
-            .features-grid .col-lg-4 .feature-card h4 {
-                font-size: 0.9rem;
+            .navbar .navbar-nav .nav-item {
+                margin-left: 0 !important;
             }
-            .features-grid .col-lg-4 .feature-card p {
-                font-size: 0.8rem;
+            .navbar .navbar-nav .nav-item.ms-2,
+            .navbar .navbar-nav .nav-item.ms-3 {
+                margin-left: 0 !important;
             }
-            .video-grid .row > div[class*="col-"] {
-                flex: 0 0 100%;
-                max-width: 100%;
+            .navbar .navbar-nav .btn {
+                width: 100%;
+                text-align: center;
             }
-            .pricing-cards .row > div[class*="col-"] {
-                flex: 0 0 100%;
-                max-width: 100%;
-                margin-bottom: 1rem;
+            .navbar .dropdown-menu {
+                background: rgba(30, 41, 59, 0.95) !important;
+                border: none !important;
+                padding: 0.5rem;
             }
-            section .display-5 {
-                font-size: 1.75rem !important;
+            .navbar .dropdown-item {
+                padding: 10px 16px;
+                border-radius: 8px;
             }
-            section .h1 {
-                font-size: 1.5rem !important;
-            }
-            section .lead {
-                font-size: 0.95rem;
-            }
+            
+            /* ===== Logo & decorative elements ===== */
             .logo-container img {
-                max-width: 80px !important;
+                max-width: 60px !important;
                 height: auto !important;
             }
-            /* Demo bot cards */
-            .demo-bot-cards .row > div[class*="col-"] {
-                flex: 0 0 100%;
-                max-width: 100%;
-            }
-            .footer-links {
-                font-size: 0.85rem;
-            }
-            .footer-bottom {
-                font-size: 0.75rem;
-            }
-        }
-        
-        @media (max-width: 576px) {
-            .hero-title {
-                font-size: 1.5rem !important;
-            }
-            .hero-section {
-                padding: 40px 0 30px !important;
-            }
-            .features-grid .col-lg-4 {
-                flex: 0 0 100%;
-                max-width: 100%;
-            }
+            
+            /* ===== Section Layout ===== */
             section {
                 padding: 40px 0 !important;
+            }
+            section .display-5 {
+                font-size: 1.5rem !important;
+            }
+            section .h1 {
+                font-size: 1.3rem !important;
+            }
+            section .lead {
+                font-size: 0.9rem;
+            }
+            .container {
+                padding-left: 16px !important;
+                padding-right: 16px !important;
+            }
+            
+            /* ===== Feature Cards (2 columns) ===== */
+            .feature-card {
+                padding: 20px 15px !important;
+            }
+            .feature-card h4 {
+                font-size: 0.9rem;
+            }
+            .feature-card p {
+                font-size: 0.8rem;
+            }
+            .feature-card i {
+                font-size: 1.5rem !important;
+            }
+            
+            /* ===== Video Cards (1 column) ===== */
+            .video-card {
+                margin-bottom: 0.5rem;
+            }
+            .video-card {
+                min-height: auto;
+            }
+            .video-section .row-cols-1 .col,
+            .video-section .row-cols-lg-3 .col {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .video-info {
+                padding: 10px 12px;
+            }
+            .video-info h6 {
+                font-size: 0.85rem;
+            }
+            .video-info p,
+            .video-info small {
+                font-size: 0.75rem;
+            }
+            
+            /* ===== Pricing Cards (1 column) ===== */
+            .pricing-card {
+                margin-bottom: 1rem;
+            }
+            .pricing-cards .row > [class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            .btn-group.w-100 > .btn {
+                font-size: 0.8rem;
+                padding: 8px 4px;
+            }
+            
+            /* ===== Demo Bot Cards (1 column) ===== */
+            .demo-bot-card {
+                min-height: auto;
+            }
+            .demo-bot-cards .row > [class*="col-"] {
+                flex: 0 0 100%;
+                max-width: 100%;
+            }
+            
+            /* ===== Footer ===== */
+            .footer-links {
+                font-size: 0.8rem;
+            }
+            .footer-bottom {
+                font-size: 0.7rem;
+            }
+            
+            /* ===== Feature logos/badges ===== */
+            .badge-premium {
+                font-size: 0.7rem;
+                padding: 4px 12px;
+            }
+        }
+
+        /* Extra small devices (< 576px) */
+        @media (max-width: 575.98px) {
+            .hero-title {
+                font-size: 1.4rem !important;
+            }
+            .hero-section {
+                padding: 40px 0 20px !important;
+            }
+            .feature-card {
+                padding: 15px 12px !important;
+            }
+            section {
+                padding: 30px 0 !important;
             }
         }
     </style>
@@ -141,7 +238,7 @@
                             An automation platform that 
                             <span class="position-relative d-inline-block" >
                                 can change your life!
-                                <img src="{{ url_for('static', filename='Magic_Bot_AI.png') }}" alt="AI Magic Bot" class="hero-logo-animated magic-spin color-shift" style="position: absolute; top: -50px; right: -480px; width: 280px; height: 280px; border-radius: 40px; object-fit: cover; border: 5px solid rgba(255, 255, 255, 0.3); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);" data-bs-toggle="tooltip" data-bs-placement="top" title="✨ Fun Fact: This logo was created with AI magic! It represents the fusion of technology and creativity that powers our platform.">
+                                <img src="{{ url_for('static', filename='Magic_Bot_AI.png') }}" alt="AI Magic Bot" class="hero-logo-animated magic-spin color-shift" style="position: absolute; top: -150px; right: -480px; width: 280px; height: 280px; border-radius: 40px; object-fit: cover; border: 5px solid rgba(255, 255, 255, 0.3); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);" data-bs-toggle="tooltip" data-bs-placement="top" title="✨ Fun Fact: This logo was created with AI magic! It represents the fusion of technology and creativity that powers our platform.">
                             </span>
                         </p>
                     </div>
@@ -350,7 +447,7 @@
                                         <div class="mb-3">
                                             <i class="bi bi-currency-exchange display-4 text-success"></i>
                                         </div>
-                                        <h5 class="fw-bold">Stock Analysis Bot</h5>
+                                        <h6 class="fw-bold">Stock Analysis Bot @stockAnalysis_magicbot</h6>
                                         <p class="text-muted small mb-3">Ask about any stock — get real-time analysis, fundamentals, and technical insights.</p>
                                         <p class="small mb-2">If you are already logged in to Telegram Web on this browser, click</p>
                                         <a href="https://web.telegram.org/k/#@stockAnalysis_magicbot" target="_blank" class="btn btn-outline-primary">
@@ -365,7 +462,7 @@
                                         <div class="mb-3">
                                             <i class="bi bi-cart display-4 text-warning"></i>
                                         </div>
-                                        <h5 class="fw-bold">Shopping Helper Bot</h5>
+                                        <h6 class="fw-bold">Shopping Helper Bot @shoppingHelper_magicbot</h6>
                                         <p class="text-muted small mb-3">Find the best deals, compare prices, and get shopping recommendations instantly.</p>
                                         <p class="small mb-2">If you are already logged in to Telegram Web on this browser, click</p>
                                         <a href="https://web.telegram.org/k/#@shoppingHelper_magicbot" target="_blank" class="btn btn-outline-primary">
@@ -380,7 +477,7 @@
                                         <div class="mb-3">
                                             <i class="bi bi-house-heart display-4 text-danger"></i>
                                         </div>
-                                        <h5 class="fw-bold">Real Estate Report Bot</h5>
+                                        <h6 class="fw-bold">Real Estate Report Bot @realEstateReport_magicbot</h6>
                                         <p class="text-muted small mb-3">Search properties, find price cuts, and get comprehensive real estate market reports.</p>
                                         <p class="small mb-2">If you are already logged in to Telegram Web on this browser, click</p>
                                         <a href="https://web.telegram.org/k/#@realEstateReport_magicbot" target="_blank" class="btn btn-outline-primary">
@@ -398,9 +495,8 @@
                                     <li><strong>Open Telegram App</strong> — Launch Telegram on your mobile device or desktop</li>
                                     <li><strong>Search for Your Bot</strong>
                                         <ul class="mt-1 mb-0">
-                                            <li><strong>Method A:</strong> Copy the bot name @YourBotName</li>
-                                            <li><strong>Method B:</strong> Search for @YourBotName in Telegram search</li>
-                                            <li><strong>Method C:</strong> Scan the QR code provided in email</li>
+                                            <li><strong>Step 1:</strong> Copy the bot name @YourBotName</li>
+                                            <li><strong>Step 2:</strong> Search for @YourBotName in Telegram search</li>
                                         </ul>
                                     </li>
                                     <li><strong>Start Conversation</strong> — Click "Start" or send /start command to begin interacting with your bot</li>
@@ -913,11 +1009,21 @@
             }
         });
         
+        // Mobile: fix dropdown toggle (no overflow clipping)
+        document.addEventListener('DOMContentLoaded', function() {
+            const navbarCollapse = document.getElementById('navbarNav');
+            if (navbarCollapse) {
+                navbarCollapse.addEventListener('shown.bs.collapse', function () {
+                    this.style.overflow = 'visible';
+                });
+            }
+        });
+        
         // Close mobile menu when clicking a link
-        document.querySelectorAll('.navbar-nav .nav-link').forEach(link => {
+        document.querySelectorAll('.navbar-nav .nav-link, .navbar-nav .dropdown-item').forEach(link => {
             link.addEventListener('click', () => {
                 const navbarCollapse = document.querySelector('.navbar-collapse');
-                if (navbarCollapse.classList.contains('show')) {
+                if (navbarCollapse && navbarCollapse.classList.contains('show')) {
                     const bsCollapse = new bootstrap.Collapse(navbarCollapse);
                     bsCollapse.hide();
                 }

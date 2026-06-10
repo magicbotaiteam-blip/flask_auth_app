@@ -290,12 +290,87 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Auto-dismiss alerts
         setTimeout(() => {
             document.querySelectorAll('.alert').forEach(el => {
                 const bs = new bootstrap.Alert(el);
                 bs.close();
             });
         }, 5000);
+        
+        // Sortable tables — click headers to sort
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('table.group-table').forEach(function(table) {
+                var thead = table.querySelector('thead');
+                if (!thead) return;
+                var ths = thead.querySelectorAll('th');
+                
+                // Determine which columns to skip for each table
+                // The pending invitations table has: Group, Invited By, Expires, Action
+                // The all groups table has: Group Name, Role, Members, Since, Actions
+                var skipColumns = {};
+                ths.forEach(function(th, colIdx) {
+                    var label = th.textContent.trim().toLowerCase();
+                    if (label === 'action' || label === 'actions') {
+                        skipColumns[colIdx] = true;
+                    }
+                });
+                
+                ths.forEach(function(th, colIdx) {
+                    if (skipColumns[colIdx]) return;
+                    
+                    th.style.cursor = 'pointer';
+                    th.style.userSelect = 'none';
+                    
+                    var indicator = document.createElement('span');
+                    indicator.className = 'sort-indicator ms-1';
+                    indicator.textContent = '↕';
+                    indicator.style.fontSize = '0.8rem';
+                    indicator.style.color = '#94a3b8';
+                    th.appendChild(indicator);
+                    
+                    th.addEventListener('click', function() {
+                        var tbody = table.querySelector('tbody');
+                        if (!tbody) return;
+                        var rows = Array.from(tbody.querySelectorAll('tr'));
+                        
+                        var currentDir = th.dataset.sortDir || 'none';
+                        var dir = currentDir === 'asc' ? 'desc' : 'asc';
+                        
+                        ths.forEach(function(h) {
+                            delete h.dataset.sortDir;
+                            var ind = h.querySelector('.sort-indicator');
+                            if (ind) ind.textContent = '↕';
+                        });
+                        
+                        th.dataset.sortDir = dir;
+                        var ind = th.querySelector('.sort-indicator');
+                        if (ind) ind.textContent = dir === 'asc' ? '▲' : '▼';
+                        
+                        rows.sort(function(a, b) {
+                            var aVal = (a.cells[colIdx] ? a.cells[colIdx].textContent.trim() : '').toLowerCase();
+                            var bVal = (b.cells[colIdx] ? b.cells[colIdx].textContent.trim() : '').toLowerCase();
+                            
+                            var aNum = Date.parse(aVal);
+                            var bNum = Date.parse(bVal);
+                            if (!isNaN(aNum) && !isNaN(bNum)) {
+                                return dir === 'asc' ? aNum - bNum : bNum - aNum;
+                            }
+                            
+                            aNum = parseFloat(aVal.replace(/[^0-9.\-]/g, ''));
+                            bNum = parseFloat(bVal.replace(/[^0-9.\-]/g, ''));
+                            if (!isNaN(aNum) && !isNaN(bNum)) {
+                                return dir === 'asc' ? aNum - bNum : bNum - aNum;
+                            }
+                            
+                            return dir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+                        });
+                        
+                        rows.forEach(function(row) { tbody.appendChild(row); });
+                    });
+                });
+            });
+        });
     </script>
 </div>
 <!-- end .sidebar-content -->
