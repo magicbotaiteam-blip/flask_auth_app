@@ -1468,7 +1468,9 @@ def admin_bots():
 
     # Get paginated bots
     bots = conn.execute("""
-        SELECT b.*, u.username as owner_username
+        SELECT b.*, u.username as owner_username,
+               u.preferred_platform as owner_platform,
+               u.platform_user_id as owner_platform_user_id
         FROM bots b
         LEFT JOIN users u ON b.user_id = u.id
         ORDER BY b.id DESC
@@ -1571,22 +1573,28 @@ def register_bot(bot_id=None):
         print(f"DEBUG: Bot keys: {list(bot.keys()) if hasattr(bot, 'keys') else 'No keys attribute'}")
         print(f"DEBUG: Bot name: {bot.get('name') if isinstance(bot, dict) else 'Not a dict'}")
 
-    # Fetch user's email for default value
+    # Fetch user's email and platform info for default values
     user_email = ""
+    user_platform = ""
+    user_platform_user_id = ""
     try:
         conn = get_db_connection()
-        user = conn.execute("SELECT email FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+        user = conn.execute("SELECT email, preferred_platform, platform_user_id FROM users WHERE id = ?", (session["user_id"],)).fetchone()
         if user:
-            user_email = user["email"]
+            user_email = user["email"] or ""
+            user_platform = user["preferred_platform"] or ""
+            user_platform_user_id = user["platform_user_id"] or ""
         conn.close()
     except Exception as e:
-        print(f"DEBUG: Error fetching user email: {e}")
+        print(f"DEBUG: Error fetching user data: {e}")
 
     return render_template("register_bot_new.html",
                          bot=bot,
                          username=session.get("username"),
                          role=role,
-                         user_email=user_email)
+                         user_email=user_email,
+                         user_platform=user_platform,
+                         user_platform_user_id=user_platform_user_id)
 
 @app.route("/check-bot-name")
 @login_required

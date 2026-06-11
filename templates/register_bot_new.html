@@ -179,6 +179,22 @@
                             <textarea class="form-control" id="bot-description" name="description" 
                                       rows="3" placeholder="Describe what this bot does">{{ bot.description if bot else '' }}</textarea>
                         </div>
+                        
+                        <!-- Platform (from user profile, display only) -->
+                        <div class="mb-3">
+                            <label for="bot-platform" class="form-label">Platform</label>
+                            <input type="text" class="form-control" id="bot-platform"
+                                   value="{{ user_platform }}" readonly>
+                            <div class="form-text">Platform from your <a href="{{ url_for('profile') }}">profile settings</a></div>
+                        </div>
+                        
+                        <!-- Platform User ID (from user profile, display only) -->
+                        <div class="mb-3">
+                            <label for="bot-platform-user-id" class="form-label">Platform User ID</label>
+                            <input type="text" class="form-control" id="bot-platform-user-id"
+                                   value="{{ user_platform_user_id }}" readonly>
+                            <div class="form-text">Your platform user ID from <a href="{{ url_for('profile') }}">profile settings</a></div>
+                        </div>
                     </div>
                     
                     <!-- Bot Token (Admin only) -->

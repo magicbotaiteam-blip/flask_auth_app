@@ -9,17 +9,24 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
         /* Base table styles */
+        .table-responsive table {
+            font-size: 0.75rem;
+        }
+        .table-responsive th, .table-responsive td {
+            padding: 0.3rem 0.35rem !important;
+            white-space: nowrap;
+        }
         .bot-name-cell {
             font-weight: 600;
         }
         .owner-badge {
             background: #e2e8f0;
             color: #475569;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
         }
         .action-btn {
-            font-size: 0.8rem;
-            padding: 0.25rem 0.6rem;
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
         }
 
         /* ===== Mobile: ≤768px ===== */
@@ -205,6 +212,8 @@
                                 <th>Name</th>
                                 <th>Owner</th>
                                 <th>Email</th>
+                                <th>Platform</th>
+                                <th>Platform User ID</th>
                                 <th>Type</th>
                                 <th>Status</th>
                                 <th>Created</th>
@@ -218,6 +227,8 @@
                                 <td data-label="Name" class="bot-name-cell">{{ bot.name }}</td>
                                 <td data-label="Owner"><span class="badge owner-badge"><i class="bi bi-person"></i> {{ bot.owner_username or 'Unknown' }}</span></td>
                                 <td data-label="Email">{{ bot.email or '—' }}</td>
+                                <td data-label="Platform">{{ bot.owner_platform or '—' }}</td>
+                                <td data-label="Platform User ID">{{ bot.owner_platform_user_id or '—' }}</td>
                                 <td data-label="Type"><span class="badge bg-info">{{ bot.messaging|title if bot.messaging else 'N/A' }}</span></td>
                                 <td data-label="Status">
                                     {% if bot.status == 'active' %}
