@@ -46,3 +46,7 @@ instance/
 venv/
 .DS_Store
 *.apk
+*.swp
+*.swa
+users.db-shm
+users.db-wal

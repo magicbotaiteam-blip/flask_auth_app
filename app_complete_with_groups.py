@@ -146,7 +146,7 @@ def init_db_complete():
             provider TEXT NOT NULL DEFAULT 'local',
             provider_id TEXT UNIQUE,
             username TEXT NOT NULL UNIQUE,
-            email TEXT,
+            email TEXT UNIQUE,
             password_hash TEXT,
             referral_credits INTEGER DEFAULT 0,
             referral_badge TEXT DEFAULT NULL,
@@ -896,6 +896,29 @@ def index():
                 conn.commit()
                 conn.close()
             except Exception as e:
+                err_str = str(e).lower()
+                # If the email already exists (from another provider like local),
+                # link this Google account to the existing user instead
+                if "unique" in err_str and "email" in err_str:
+                    existing_user = conn.execute(
+                        "SELECT * FROM users WHERE email = ?",
+                        (user_info.get("email"),)
+                    ).fetchone()
+                    if existing_user:
+                        conn.close()
+                        session["user_id"] = existing_user["id"]
+                        session["username"] = existing_user["username"]
+                        session["provider"] = "google"
+                        conn2 = get_db_connection()
+                        role_row = conn2.execute("""
+                            SELECT r.name FROM roles r
+                            JOIN user_roles ur ON r.id = ur.role_id
+                            WHERE ur.user_id = ?
+                        """, (existing_user["id"],)).fetchone()
+                        conn2.close()
+                        session["role"] = role_row["name"] if role_row else "customer"
+                        flash("Logged in with Google. Your account was already registered with this email.", "info")
+                        return redirect(url_for("index"))
                 conn.close()
                 flash(f"Database error: {str(e)}", "error")
                 return redirect(url_for("landing"))
@@ -1107,15 +1130,15 @@ def signup_local():
             flash("Username already exists. Please choose a different one.", "error")
             return render_template("signup_local.html", google=HAS_GOOGLE_OAUTH)
 
-        # Check if email already exists for local provider
+        # Check if email already exists (across all providers)
         existing_email = conn.execute(
-            "SELECT * FROM users WHERE email = ? AND provider = 'local'",
+            "SELECT * FROM users WHERE email = ?",
             (email,)
         ).fetchone()
 
         if existing_email:
             conn.close()
-            flash("Email already registered for local account.", "error")
+            flash("Email already registered.", "error")
             return render_template("signup_local.html", google=HAS_GOOGLE_OAUTH)
 
         # Create user
