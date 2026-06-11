@@ -2789,55 +2789,69 @@ def delete_referral(ref_id):
     return redirect(url_for("referrer"))
 
 
+# ==================== API Key Helpers ====================
+
+API_EXPORT_KEY = os.environ.get("API_EXPORT_KEY", "")
+
+
+def _require_export_auth():
+    """Check API key from query param or env-var-configured secret.
+
+    Returns True if authorized, sets 401/403 response globals otherwise.
+    Uses either:
+      1. API_EXPORT_KEY env var (if set)
+      2. The first admin user's password_hash as a derived key
+    """
+    provided = request.args.get("api_key", "")
+    if not provided:
+        return False
+    if API_EXPORT_KEY and provided == API_EXPORT_KEY:
+        return True
+    conn = get_db_connection()
+    admin = conn.execute(
+        """SELECT id, password_hash FROM users u
+            JOIN user_roles ur ON u.id = ur.user_id
+            JOIN roles r ON ur.role_id = r.id
+            WHERE r.name = 'admin'
+            ORDER BY u.id ASC LIMIT 1"""
+    ).fetchone()
+    conn.close()
+    if admin and admin["password_hash"] and provided == admin["password_hash"]:
+        return True
+    return False
+
+
 # ==================== Data Export API ====================
 
 @app.route("/api/export/users", methods=["GET"])
 def api_export_users():
     """Export users table as JSON.
 
-    Requires a valid api_key query parameter matching the first admin's API key.
-    Usage: GET /api/export/users?api_key=YOUR_ADMIN_API_KEY
+    Usage: GET /api/export/users?api_key=SECRET_KEY
+    See admin's password_hash or set API_EXPORT_KEY env var.
     """
-    api_key = request.args.get("api_key", "")
-    if not api_key:
-        return jsonify({"error": "Missing 'api_key' parameter"}), 401
+    if not _require_export_auth():
+        return jsonify({"error": "Missing or invalid api_key"}), 401
 
     conn = get_db_connection()
-    admin = conn.execute(
-        "SELECT u.* FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'admin' LIMIT 1"
-    ).fetchone()
-    if not admin or admin.get("api_key", "") != api_key:
-        conn.close()
-        return jsonify({"error": "Invalid api_key"}), 403
-
     users = conn.execute("SELECT * FROM users ORDER BY id").fetchall()
     conn.close()
 
-    columns = users[0].keys() if users else []
-    result = [dict(zip(columns, row)) for row in users]
+    if not users:
+        return jsonify([])
 
+    columns = users[0].keys()
+    result = [dict(zip(columns, row)) for row in users]
     return jsonify(result)
 
 
 @app.route("/api/export/users/csv", methods=["GET"])
 def api_export_users_csv():
-    """Export users table as CSV.
-
-    Requires a valid api_key query parameter matching the first admin's API key.
-    Usage: GET /api/export/users/csv?api_key=YOUR_ADMIN_API_KEY
-    """
-    api_key = request.args.get("api_key", "")
-    if not api_key:
-        return "Missing 'api_key' parameter", 401
+    """Export users table as CSV."""
+    if not _require_export_auth():
+        return "Missing or invalid api_key", 401
 
     conn = get_db_connection()
-    admin = conn.execute(
-        "SELECT u.* FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'admin' LIMIT 1"
-    ).fetchone()
-    if not admin or admin.get("api_key", "") != api_key:
-        conn.close()
-        return "Invalid api_key", 403
-
     users = conn.execute("SELECT * FROM users ORDER BY id").fetchall()
     conn.close()
 
@@ -2865,23 +2879,13 @@ def api_export_users_csv():
 def api_export_db():
     """Export entire database as JSON.
 
-    Requires a valid api_key query parameter matching the first admin's API key.
-    Usage: GET /api/export/db?api_key=YOUR_ADMIN_API_KEY
+    Usage: GET /api/export/db?api_key=SECRET_KEY
     Caution: can be slow for large databases.
     """
-    api_key = request.args.get("api_key", "")
-    if not api_key:
-        return jsonify({"error": "Missing 'api_key' parameter"}), 401
+    if not _require_export_auth():
+        return jsonify({"error": "Missing or invalid api_key"}), 401
 
     conn = get_db_connection()
-    admin = conn.execute(
-        "SELECT u.* FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'admin' LIMIT 1"
-    ).fetchone()
-    if not admin or admin.get("api_key", "") != api_key:
-        conn.close()
-        return jsonify({"error": "Invalid api_key"}), 403
-
-    # Discover all tables
     tables = conn.execute("""
         SELECT name FROM sqlite_master WHERE type='table'
         UNION
@@ -2892,7 +2896,7 @@ def api_export_db():
     for (table_name,) in tables:
         if table_name.startswith("sqlite_"):
             continue
-        rows = conn.execute(f"SELECT * FROM {table_name}").fetchall()
+        rows = conn.execute("SELECT * FROM " + table_name + " ORDER BY id").fetchall()
         if rows:
             columns = rows[0].keys()
             result[table_name] = [dict(zip(columns, row)) for row in rows]
