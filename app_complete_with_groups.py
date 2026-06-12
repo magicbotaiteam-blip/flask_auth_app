@@ -530,6 +530,14 @@ def features_qa():
                          username=session.get("username"),
                          role=session.get("role", "customer"))
 
+@app.route("/learn")
+def learn():
+    """Learn page - AI agent tutorials for first-time users"""
+    return render_template("learn.html",
+                         username=session.get("username"),
+                         role=session.get("role", "customer"))
+
+
 @app.route("/pricing")
 def pricing():
     """Pricing page"""

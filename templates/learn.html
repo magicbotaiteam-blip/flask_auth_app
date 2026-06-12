@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <title>Learn AI Agents — Magic Bot Tutorials & Examples</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --dark-bg: #0b0e1a;
+            --card-bg: #141829;
+            --border-color: rgba(99, 102, 241, 0.15);
+        }
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--dark-bg);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        .hero-learn {
+            background: linear-gradient(135deg, #0b0e1a 0%, #141829 50%, #1a1040 100%);
+            padding: 4rem 0 3rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .section-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            transition: transform .2s;
+        }
+        .section-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+        .code-block {
+            background: #0d1117;
+            border-radius: 12px;
+            padding: 1.25rem;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-size: 0.875rem;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            overflow-x: auto;
+            position: relative;
+            margin: 1rem 0;
+        }
+        .code-block .keyword { color: #ff7b72; }
+        .code-block .string { color: #a5d6ff; }
+        .code-block .comment { color: #8b949e; font-style: italic; }
+        .code-block .number { color: #79c0ff; }
+        .badge-use {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-right: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+        .badge-use.green { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+        .badge-use.blue { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
+        .badge-use.purple { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
+        .badge-use.orange { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
+        .badge-use.pink { background: rgba(244, 114, 182, 0.15); color: #f472b6; }
+        .badge-use.cyan { background: rgba(34, 211, 238, 0.15); color: #22d3ee; }
+        .icon-box {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .icon-box.green { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
+        .icon-box.blue { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
+        .icon-box.purple { background: rgba(167, 139, 250, 0.12); color: #a78bfa; }
+        .icon-box.orange { background: rgba(251, 146, 60, 0.12); color: #fb923c; }
+        .icon-box.pink { background: rgba(244, 114, 182, 0.12); color: #f472b6; }
+        .icon-box.cyan { background: rgba(34, 211, 238, 0.12); color: #22d3ee; }
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+            font-size: 0.875rem;
+            margin-right: 0.75rem;
+            flex-shrink: 0;
+        }
+        .toc-link {
+            color: #94a3b8;
+            text-decoration: none;
+            display: block;
+            padding: 0.4rem 0;
+            font-size: 0.9rem;
+            border-bottom: 1px solid transparent;
+            transition: color .2s;
+        }
+        .toc-link:hover {
+            color: #e2e8f0;
+        }
+        .toc-link.active {
+            color: var(--primary);
+            font-weight: 600;
+        }
+        .keyword { color: #ff7b72; }
+        .string { color: #a5d6ff; }
+        .comment { color: #8b949e; }
+        .function { color: #d2a8ff; }
+        .method { color: #ffa657; }
+        @media (max-width: 768px) {
+            .toc-col { display: none; }
+        }
+        h2 {
+            font-weight: 700;
+            font-size: 1.75rem;
+            margin-top: 3rem;
+            margin-bottom: 1.5rem;
+            color: #f1f5f9;
+        }
+        h2:first-of-type { margin-top: 0; }
+        h3 {
+            font-weight: 600;
+            font-size: 1.2rem;
+            margin-top: 1.5rem;
+            color: #e2e8f0;
+        }
+        h4 {
+            font-weight: 600;
+            font-size: 1.05rem;
+            color: #cbd5e1;
+        }
+        .prompt-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body{% if username %} class="sidebar-layout"{% endif %}>
+    {% if username %}
+        {% include '_sidebar.html' %}
+        <div class="sidebar-content">
+    {% else %}
+        {% include '_navbar_public.html' %}
+    {% endif %}
+
+    <!-- Hero -->
+    <section class="hero-learn">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <p class="text-primary fw-semibold mb-2" style="letter-spacing: 0.05em;">LEARN</p>
+                    <h1 class="display-4 fw-bold mb-3">What Can an AI Agent <span style="color: var(--primary);">Actually Do?</span></h1>
+                    <p class="lead mb-0" style="color: #94a3b8; max-width: 600px;">
+                        AI bots aren't just chatbots. They run on schedules, send emails, search the web, check prices,
+                        and report back — all without you lifting a finger. Here's how.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-center d-none d-lg-block">
+                    <i class="bi bi-lightbulb" style="font-size: 100px; color: var(--primary); opacity: 0.6;"></i>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container py-4">
+        <div class="row">
+            <!-- Sidebar TOC -->
+            <div class="col-lg-3 toc-col">
+                <div style="position: sticky; top: 2rem;">
+                    <p class="text-uppercase small fw-bold mb-3" style="color: #64748b; letter-spacing: 0.05em;">On This Page</p>
+                    <a href="#section-what" class="toc-link">What's an AI Agent?</a>
+                    <a href="#section-usecases" class="toc-link">Real-Life Examples</a>
+                    <a href="#section-cron" class="toc-link">Scheduled Tasks (Cron)</a>
+                    <a href="#section-skills" class="toc-link">Skills & Tools</a>
+                    <a href="#section-prompts" class="toc-link">Easy Prompt Examples</a>
+                    <a href="#section-start" class="toc-link">Your First Bot</a>
+                </div>
+            </div>
+
+            <!-- Main Content -->
+            <div class="col-lg-9">
+
+                <!-- Section: What's an AI Agent -->
+                <div id="section-what">
+                    <h2><i class="bi bi-question-circle" style="color: var(--primary);"></i> What's an AI Agent?</h2>
+                    <div class="section-card">
+                        <p style="font-size: 1.1rem;">
+                            Think of an AI agent as a <strong>smart assistant that doesn't just talk — it acts.</strong>
+                            You tell it what to do in plain English, and it uses tools to get things done:
+                        </p>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="icon-box green me-3">
+                                        <i class="bi bi-search"></i>
+                                    </div>
+                                    <div>
+                                        <h4>Search the Web</h4>
+                                        <p class="small" style="color: #94a3b8;">Look up prices, news, weather, flights — anything online.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="icon-box blue me-3">
+                                        <i class="bi bi-envelope"></i>
+                                    </div>
+                                    <div>
+                                        <h4>Send Emails</h4>
+                                        <p class="small" style="color: #94a3b8;">Compose and send reports, alerts, or daily digests automatically.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="icon-box purple me-3">
+                                        <i class="bi bi-cpu"></i>
+                                    </div>
+                                    <div>
+                                        <h4>Analyze Data</h4>
+                                        <p class="small" style="color: #94a3b8;">Check stock prices, compute metrics, summarize trends.</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-start">
+                                    <div class="icon-box orange me-3">
+                                        <i class="bi bi-clock"></i>
+                                    </div>
+                                    <div>
+                                        <h4>Run on a Schedule</h4>
+                                        <p class="small" style="color: #94a3b8;">Do the same task every morning, every hour, or every Monday.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Cron / Scheduled Tasks -->
+                <div id="section-cron">
+                    <h2><i class="bi bi-clock-history" style="color: var(--primary);"></i> What's a Scheduled Task (Cron)?</h2>
+                    <div class="section-card">
+                        <p>
+                            A <strong>cron job</strong> is simply a task that runs automatically at a specific time.
+                            Instead of manually checking something every day, you set it once and forget it.
+                        </p>
+                        <div class="row g-3 mt-2">
+                            <div class="col-md-6">
+                                <div class="badge-use green">✅ Every morning 8:00 AM</div>
+                                <p class="small mb-0" style="color: #94a3b8;">"Check grocery deals and email me the best prices"</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="badge-use blue">✅ Every trading day 9:00 AM</div>
+                                <p class="small mb-0" style="color: #94a3b8;">"Run stock screener and post top 3 stocks to my group"</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="badge-use purple">✅ Every Monday 10:00 AM</div>
+                                <p class="small mb-0" style="color: #94a3b8;">"Search for cruise deals and send the best ones"</p>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="badge-use orange">✅ Every day 9:00 AM</div>
+                                <p class="small mb-0" style="color: #94a3b8;">"Send today's weather forecast to my family group"</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Real Life Examples -->
+                <div id="section-usecases">
+                    <h2><i class="bi bi-rocket-takeoff" style="color: var(--primary);"></i> Real Things AI Agents Do Every Day</h2>
+                    <p style="color: #94a3b8;">These are actual cron jobs running right now. Simple prompts, powerful results.</p>
+
+                    <!-- Example 1 -->
+                    <div class="section-card">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="icon-box green me-3" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                                <i class="bi bi-egg-fried"></i>
+                            </div>
+                            <div>
+                                <span class="badge-use green">Every day 8:00 AM</span>
+                                <span class="badge-use blue">Grocery Shopping</span>
+                            </div>
+                        </div>
+                        <h4>Church Grocery Deal Scanner</h4>
+                        <p style="color: #94a3b8;">Every morning at 8 AM, the agent checks 6 grocery stores (Costco, Walmart, ALDI, Lidl, Great Wall, H-Mart) for deals on chicken thighs, eggs, pork belly, and rice. If prices are below a threshold, it emails the results to the church coordinators.</p>
+                        <div class="prompt-label">Prompt (what you tell the bot):</div>
+                        <div class="code-block">
+                            # Your daily grocery scanner to find the best bulk prices<br>
+                            # Only reports when prices are genuinely good — no noise if nothing's on sale<br>
+                            <br>
+                            Search weekly ads for these items in Fairfax, VA:<br>
+                            <span class="keyword">• Chicken thighs</span> &lt; <span class="number">$2.50</span>/lb<br>
+                            <span class="keyword">• Eggs</span> (5 dozen) &lt; <span class="number">$12</span><br>
+                            <span class="keyword">• Pork belly</span> &lt; <span class="number">$3.50</span>/lb<br>
+                            <span class="keyword">• Rice</span> (25lb) &lt; <span class="number">$20</span><br>
+                            <br>
+                            Check: Costco, Walmart, ALDI, Lidl, Great Wall, H-Mart<br>
+                            Email results to the team only if something is worth buying.
+                        </div>
+                    </div>
+
+                    <!-- Example 2 -->
+                    <div class="section-card">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="icon-box purple me-3" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div>
+                                <span class="badge-use purple">Every trading day 9:00 AM</span>
+                                <span class="badge-use cyan">Stock Market</span>
+                            </div>
+                        </div>
+                        <h4>Daily US Stock Radar</h4>
+                        <p style="color: #94a3b8;">Before the market opens at 9 AM ET, the bot runs a technical screener on 15+ major stocks (AAPL, MSFT, NVDA, etc.), pulls fundamentals, ranks the top 3 strongest and bottom 3 riskiest, and posts the report to Telegram.</p>
+                        <div class="prompt-label">Prompt (what you tell the bot):</div>
+                        <div class="code-block">
+                            Run a pre-market stock scan. Check these tickers:<br>
+                            <span class="keyword">AAPL, MSFT, NVDA, AMZN, GOOGL, META, TSLA, ORCL, AVGO, INTC, TSM, AMD</span><br>
+                            <br>
+                            For each stock, fetch:<br>
+                            <span class="keyword">1.</span> Current price & RSI<br>
+                            <span class="keyword">2.</span> Forward P/E & revenue growth<br>
+                            <span class="keyword">3.</span> Technical trend (bullish / bearish / neutral)<br>
+                            <br>
+                            Output:<br>
+                            <span class="keyword">✅ TOP 3</span> Strongest stocks with reasoning<br>
+                            <span class="keyword">⚠️ BOTTOM 3</span> Riskiest stocks with reasoning<br>
+                            Then a quick watchlist snapshot. Keep it concise.
+                        </div>
+                    </div>
+
+                    <!-- Example 3 -->
+                    <div class="section-card">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="icon-box orange me-3" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                                <i class="bi bi-ship"></i>
+                            </div>
+                            <div>
+                                <span class="badge-use orange">Every day 10:00 AM</span>
+                                <span class="badge-use pink">Travel Deals</span>
+                            </div>
+                        </div>
+                        <h4>Cruise Deal Hunter</h4>
+                        <p style="color: #94a3b8;">Scans Viking River Cruises' promotions page daily for Danube River sailings, looking for free airfare or reduced fare offers. If there's a deal, it emails the details automatically.</p>
+                        <div class="prompt-label">Prompt (what you tell the bot):</div>
+                        <div class="code-block">
+                            Check Viking River Cruises for Danube River promotions.<br>
+                            Look for: <span class="keyword">Free Airfare</span>, <span class="keyword">Reduced Fare</span>, <span class="keyword">Special Offers</span><br>
+                            <br>
+                            For each offer found, include:<br>
+                            <span class="keyword">•</span> Promotion name & details<br>
+                            <span class="keyword">•</span> Price (if shown)<br>
+                            <span class="keyword">•</span> Direct URL to the offer<br>
+                            <span class="keyword">•</span> How long the offer is valid<br>
+                            <br>
+                            Email the best offers. If nothing new, just check and say "no new deals."
+                        </div>
+                    </div>
+
+                    <!-- Example 4 -->
+                    <div class="section-card">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="icon-box blue me-3" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                                <i class="bi bi-airplane"></i>
+                            </div>
+                            <div>
+                                <span class="badge-use blue">Every day 11:00 AM</span>
+                                <span class="badge-use green">Flight Search</span>
+                            </div>
+                        </div>
+                        <h4>Flight Price Monitor</h4>
+                        <p style="color: #94a3b8;">Searches for flights from Washington D.C. to Taipei every day, checking price trends across multiple airlines. Sends a summary so you know when to buy.</p>
+                        <div class="prompt-label">Prompt (what you tell the bot):</div>
+                        <div class="code-block">
+                            Search for flights from <span class="keyword">Washington DC (IAD/DCA)</span> to <span class="keyword">Taipei (TPE)</span>.<br>
+                            <br>
+                            Find the cheapest options for each airline, then:<br>
+                            <span class="keyword">1.</span> List the 3 cheapest round-trip flights<br>
+                            <span class="keyword">2.</span> Note any price changes from yesterday<br>
+                            <span class="keyword">3.</span> Flag if prices dropped more than 10%<br>
+                            <br>
+                            Send a Telegram summary. No need to email unless there's a big drop.
+                        </div>
+                    </div>
+
+                    <!-- Example 5 -->
+                    <div class="section-card">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="icon-box pink me-3" style="width: 40px; height: 40px; font-size: 1.2rem;">
+                                <i class="bi bi-cloud-sun"></i>
+                            </div>
+                            <div>
+                                <span class="badge-use pink">Every morning 7:00 AM</span>
+                                <span class="badge-use cyan">Personal Assistant</span>
+                            </div>
+                        </div>
+                        <h4>Daily Weather Briefing</h4>
+                        <p style="color: #94a3b8;">Checks the weather for the day and emails a quick morning briefing — temperature, rain chance, and a recommendation (umbrella? jacket?).</p>
+                        <div class="prompt-label">Prompt (what you tell the bot):</div>
+                        <div class="code-block">
+                            Check today's weather in <span class="keyword">Fairfax, VA</span>.<br>
+                            <br>
+                            Tell me:<br>
+                            <span class="keyword">•</span> High / Low temperature<br>
+                            <span class="keyword">•</span> Rain / snow chance (%)<br>
+                            <span class="keyword">•</span> Wind speed<br>
+                            <span class="keyword">•</span> One-line verdict (rain jacket? short sleeves?)<br>
+                            <br>
+                            Email it to the family. Keep it short and friendly.
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Section: Skills & Tools -->
+                <div id="section-skills">
+                    <h2><i class="bi bi-tools" style="color: var(--primary);"></i> Skills & Tools — How Agents Get Things Done</h2>
+                    <div class="section-card">
+                        <p>
+                            A bot without tools is just a fancy text generator. <strong>Skills</strong> give your bot
+                            superpowers — the ability to search the web, check stock prices, send emails, and more.
+                        </p>
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-4">
+                                <div class="icon-box green">
+                                    <i class="bi bi-globe"></i>
+                                </div>
+                                <h5 class="mt-2">Web Search</h5>
+                                <p class="small" style="color: #94a3b8;">Search Google for current info, prices, and deals.</p>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="icon-box blue">
+                                    <i class="bi bi-envelope"></i>
+                                </div>
+                                <h5 class="mt-2">Email</h5>
+                                <p class="small" style="color: #94a3b8;">Send emails to anyone automatically.</p>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="icon-box purple">
+                                    <i class="bi bi-bar-chart"></i>
+                                </div>
+                                <h5 class="mt-2">Stock Data</h5>
+                                <p class="small" style="color: #94a3b8;">Fetch real-time prices, RSI, P/E ratios.</p>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="icon-box orange">
+                                    <i class="bi bi-robot"></i>
+                                </div>
+                                <h5 class="mt-2">Telegram Bot</h5>
+                                <p class="small" style="color: #94a3b8;">Post messages, images, and reports to groups.</p>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="icon-box pink">
+                                    <i class="bi bi-cloud-sun"></i>
+                                </div>
+                                <h5 class="mt-2">Weather</h5>
+                                <p class="small" style="color: #94a3b8;">Check current weather and forecasts.</p>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="icon-box cyan">
+                                    <i class="bi bi-gear"></i>
+                                </div>
+                                <h5 class="mt-2">Custom Tools</h5>
+                                <p class="small" style="color: #94a3b8;">Install new skills to extend your bot's abilities.</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3" style="background: #0d1117; border-radius: 12px; border: 1px solid #30363d;">
+                            <p class="small mb-0" style="color: #94a3b8;">
+                                <i class="bi bi-info-circle" style="color: var(--primary);"></i>
+                                <strong>Pro tip:</strong> Skills are modular. Want your bot to track crypto prices?
+                                Install a crypto skill. Want it to generate images? Install an image skill.
+                                Mix and match for any use case.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Prompt Examples -->
+                <div id="section-prompts">
+                    <h2><i class="bi bi-chat-dots" style="color: var(--primary);"></i> 3 Simple Prompts to Try Right Now</h2>
+                    <p style="color: #94a3b8;">Just copy-paste any of these into your bot. No technical knowledge needed.</p>
+
+                    <div class="section-card">
+                        <span class="badge-use green">Prompt 1</span>
+                        <h4 class="mt-2">"What's the weather today?"</h4>
+                        <div class="code-block" style="font-size: 1rem;">
+                            Check the weather in my city and tell me if I need <span class="string">an umbrella or a jacket today.</span><br>
+                            Keep it brief — one sentence is fine.
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <span class="badge-use blue">Prompt 2</span>
+                        <h4 class="mt-2">"Track a stock for me"</h4>
+                        <div class="code-block" style="font-size: 1rem;">
+                            Check <span class="keyword">NVDA</span> stock price and tell me if it's up or down today.<br>
+                            Show me price, RSI, and one sentence about the trend.
+                        </div>
+                    </div>
+
+                    <div class="section-card">
+                        <span class="badge-use purple">Prompt 3</span>
+                        <h4 class="mt-2">"Send a daily digest to my group"</h4>
+                        <div class="code-block" style="font-size: 1rem;">
+                            Every morning at <span class="number">9</span>:00 AM, post a quick market update to my Telegram group.<br>
+                            Include: S&P 500 change, top gainer, top loser, and today's key economic news.<br>
+                            Keep it under <span class="number">5</span> bullet points.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section: Your First Bot -->
+                <div id="section-start">
+                    <h2><i class="bi bi-robot" style="color: var(--primary);"></i> Your First Bot in 3 Steps</h2>
+                    <div class="section-card">
+                        <div class="d-flex align-items-start mb-4">
+                            <div class="step-badge">1</div>
+                            <div>
+                                <h4 class="mb-1">Register your bot</h4>
+                                <p class="small" style="color: #94a3b8;">Click <strong>"Create New Bot"</strong> on the dashboard. Give it a name and a platform (Telegram is the easiest to start with).</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start mb-4">
+                            <div class="step-badge">2</div>
+                            <div>
+                                <h4 class="mb-1">Write a simple prompt</h4>
+                                <p class="small" style="color: #94a3b8;">Start with something easy like "Check the weather and post it to my Telegram group every morning." You can always change it later.</p>
+                            </div>
+                        </div>
+                        <div class="d-flex align-items-start">
+                            <div class="step-badge">3</div>
+                            <div>
+                                <h4 class="mb-1">Set a schedule (or don't)</h4>
+                                <p class="small" style="color: #94a3b8;">You can set a cron schedule like <code>0 9 * * 1-5</code> (every weekday at 9 AM) or leave it as a manual bot that only responds when you message it.</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <a href="/register-bot" class="btn btn-primary btn-lg px-5">
+                                <i class="bi bi-plus-circle"></i> Create Your First Bot
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    {% if not username %}
+    {% include '_footer.html' %}
+    {% endif %}
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
