@@ -25,9 +25,6 @@
         <a href="{{ url_for('index') }}" class="sidebar-item {% if active_page == 'dashboard' %}active{% endif %}">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
-        <a href="{{ url_for('referrer') }}" class="sidebar-item {% if active_page == 'referrer' %}active{% endif %}">
-            <i class="bi bi-share"></i> Referral Program
-        </a>
     </div>
 
     <!-- Bots -->
@@ -49,6 +46,20 @@
         </a>
         <a href="/groups/create" class="sidebar-item">
             <i class="bi bi-plus-circle"></i> Create Group
+        </a>
+    </div>
+
+    <!-- Resources -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Resources</div>
+        <a href="/features/qa" class="sidebar-item">
+            <i class="bi bi-stars"></i> Features
+        </a>
+        <a href="/referral-program" class="sidebar-item {% if active_page == 'referrer' %}active{% endif %}">
+            <i class="bi bi-gift"></i> Refer & Earn
+        </a>
+        <a href="/advertisement#contact" class="sidebar-item">
+            <i class="bi bi-envelope"></i> Contact AI Team
         </a>
     </div>
 

@@ -334,11 +334,11 @@ def create_group_collaboration_ui(app):
             
             if not name:
                 flash("Group name is required.", "error")
-                return render_template("create_group.html", username=session.get("username"))
+                return render_template("create_group.html", username=session.get("username"), role=session.get("role", "customer"))
             
             if not group_chat_id:
                 flash("Group Chat ID is required.", "error")
-                return render_template("create_group.html", username=session.get("username"))
+                return render_template("create_group.html", username=session.get("username"), role=session.get("role", "customer"))
             
             user_id = session["user_id"]
             
@@ -351,7 +351,7 @@ def create_group_collaboration_ui(app):
             
             if existing:
                 flash("You already have a group with this name.", "error")
-                return render_template("create_group.html", username=session.get("username"))
+                return render_template("create_group.html", username=session.get("username"), role=session.get("role", "customer"))
             
             conn = get_db_connection()
             try:
@@ -392,9 +392,9 @@ def create_group_collaboration_ui(app):
                 conn.rollback()
                 conn.close()
                 flash(f"Error creating group: {e}", "error")
-                return render_template("create_group.html", username=session.get("username"))
+                return render_template("create_group.html", username=session.get("username"), role=session.get("role", "customer"))
         
-        return render_template("create_group.html", username=session.get("username"))
+        return render_template("create_group.html", username=session.get("username"), role=session.get("role", "customer"))
     
     @app.route("/groups/<int:group_id>")
     @group_required

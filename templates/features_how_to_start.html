@@ -12,8 +12,13 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     
 </head>
-<body>
-    {% include '_navbar_public.html' %}
+<body{% if username %} class="sidebar-layout"{% endif %}>
+    {% if username %}
+        {% include '_sidebar.html' %}
+        <div class="sidebar-content">
+    {% else %}
+        {% include '_navbar_public.html' %}
+    {% endif %}
     <!-- Navigation -->
     
 
@@ -486,5 +491,6 @@
             });
         });
     </script>
+{% if username %}</div>{% endif %}
 </body>
 </html>

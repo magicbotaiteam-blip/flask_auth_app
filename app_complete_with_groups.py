@@ -519,12 +519,16 @@ def features_application():
 @app.route("/features/how-to-start")
 def features_how_to_start():
     """How to start guide page"""
-    return render_template("features_how_to_start.html")
+    return render_template("features_how_to_start.html",
+                         username=session.get("username"),
+                         role=session.get("role", "customer"))
 
 @app.route("/features/qa")
 def features_qa():
     """Q&A page"""
-    return render_template("features_qa.html")
+    return render_template("features_qa.html",
+                         username=session.get("username"),
+                         role=session.get("role", "customer"))
 
 @app.route("/pricing")
 def pricing():
@@ -534,7 +538,9 @@ def pricing():
 @app.route("/referral-program")
 def referral_program():
     """Public referral program page"""
-    return render_template("referral_program.html")
+    return render_template("referral_program.html",
+                         username=session.get("username"),
+                         role=session.get("role", "customer"))
 
 
 @app.route("/advertisement")
@@ -981,6 +987,12 @@ def index():
     ).fetchone()["cnt"]
     referral_credits_val = referral_credits["referral_credits"] if referral_credits else 0
 
+    # Check if user has completed their profile (has preferred_platform and platform_user_id)
+    profile_complete = conn.execute(
+        "SELECT preferred_platform IS NOT NULL AND platform_user_id IS NOT NULL AND platform_user_id != '' as complete FROM users WHERE id = ?",
+        (user_id,)
+    ).fetchone()["complete"]
+
     conn.close()
 
     role = session.get("role", "customer")
@@ -994,7 +1006,8 @@ def index():
                          referral_credits=referral_credits_val,
                          referral_signed_up=referral_signed_up,
                          google=HAS_GOOGLE_OAUTH,
-                         role=role)
+                         role=role,
+                         profile_incomplete=not bool(profile_complete))
 
 
 @app.route("/health")
@@ -1642,12 +1655,6 @@ def save_bot():
         flash("Bot Name is required.")
         return redirect(url_for("register_bot"))
 
-    # Validate bot name ends with "bot" or "Bot"
-    if not form_data['name'].strip().lower().endswith('bot'):
-        flash('Bot name must end with "bot" or "Bot" (e.g., TetrisBot, tetris_bot).')
-        return redirect(url_for("register_bot", bot_id=bot_id) if bot_id else url_for("register_bot"))
-
-
     if not form_data['email']:
         flash("Email Address is required.")
         return redirect(url_for("register_bot"))
@@ -1699,11 +1706,15 @@ def save_bot():
                   form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], form_data['online'], bot_id, user_id))
         flash("Bot updated successfully!")
     else:  # Create new bot - default status is 'pending'
+        # Append _magicaibot suffix to make the name unique
+        bot_name = form_data['name'].strip()
+        if not bot_name.lower().endswith('_magicaibot'):
+            bot_name += '_magicaibot'
         conn.execute("""
             INSERT INTO bots (user_id, name, email, organization, messaging, llm, token,
                              description, webhook_url, api_key, config, tags, file_folder, online, status, is_active)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', FALSE)
-        """, (user_id, form_data['name'], form_data['email'], form_data['organization'],
+        """, (user_id, bot_name, form_data['email'], form_data['organization'],
               form_data['messaging'], form_data['llm'], form_data['token'], form_data['description'],
               form_data['webhook_url'], form_data['api_key'], config_json, form_data['tags'], form_data['file_folder'], form_data['online']))
         flash("Bot created successfully! Our team will review and activate it shortly.")

@@ -152,7 +152,7 @@
                             <label for="bot-name" class="form-label required-field">Bot Name</label>
                             <input type="text" class="form-control" id="bot-name" name="name" 
                                    value="{{ bot.name if bot else '' }}" 
-                                   placeholder="Name must end with `bot` or `Bot` (e.g., TetrisBot, tetris_bot)" required
+                                   placeholder="_magicaibot will be added as a suffix to make the name unique. " required. 
                             <div class="form-text">A unique name for your bot</div>
                         </div>
                         
@@ -355,7 +355,7 @@
                         nameInput.classList.add('is-invalid');
                         const feedback = nameInput.nextElementSibling;
                         if (feedback && feedback.classList.contains('invalid-feedback')) {
-                            feedback.textContent = 'Bot name must end with "bot" or "Bot" (e.g., TetrisBot, tetris_bot)';
+                            feedback.textContent = 'Bot name must end with "bot" or "Bot" (e.g., TetrisBot, tetris_bot)". A random 4 digits will be added before bot to ensure uniqueness.
                         }
                         return;
                     }

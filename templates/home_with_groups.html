@@ -46,7 +46,7 @@
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-8">
-                        <h1 class="card-title">Welcome back, {{ username }}! 👋</h1>
+                        <h1 class="card-title">{% if profile_incomplete %}Welcome{% else %}Welcome back{% endif %}, {{ username }}! 👋</h1>
                         <p class="card-text">Manage your bots, collaborate with groups, and build amazing things.</p>
                     </div>
                     <div class="col-md-4">
@@ -57,6 +57,20 @@
                 </div>
             </div>
         </div>
+
+        <!-- Profile Incomplete Banner -->
+        {% if profile_incomplete %}
+        <div class="alert alert-warning alert-dismissible fade show" role="alert" style="border-left: 5px solid #ffc107;">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-person-exclamation fs-3 me-3"></i>
+                <div>
+                    <strong>Complete your profile!</strong><br>
+                    Please click your username at the top right corner to complete your profile
+                </div>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endif %}
 
         <!-- Quick Actions -->
         <div class="row mb-4">

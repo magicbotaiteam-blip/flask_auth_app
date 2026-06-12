@@ -92,8 +92,13 @@
         .faq-answer { padding: 0 1.25rem 1rem; }
     </style>
 </head>
-<body>
-    {% include '_navbar_public.html' %}
+<body{% if username %} class="sidebar-layout"{% endif %}>
+    {% if username %}
+        {% include '_sidebar.html' %}
+        <div class="sidebar-content">
+    {% else %}
+        {% include '_navbar_public.html' %}
+    {% endif %}
 
     <!-- Hero -->
     <section class="referral-hero">
@@ -364,5 +369,6 @@
             });
         });
     </script>
+{% if username %}</div>{% endif %}
 </body>
 </html>
