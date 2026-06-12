@@ -1757,6 +1757,54 @@ def send_bot_activation_email(bot_name, recipient_email):
         return False
 
 
+@app.route("/api/bots/pending", methods=["GET"])
+def api_pending_bots():
+    """
+    API endpoint to get all pending bots.
+    Uses same auth as api/export/users: session admin or ?api_key=...
+
+    Usage: GET /api/bots/pending
+           GET /api/bots/pending?api_key=<key>
+
+    Returns JSON array of bots where status = 'pending'.
+    Also includes the owner's platform info from users table.
+    """
+    # Session-based admin check
+    if session.get('role', 'customer') != 'admin':
+        # Fallback to API key auth (same as api/export/users)
+        if not _require_export_auth():
+            return jsonify({"error": "Missing or invalid api_key"}), 401
+
+    conn = get_db_connection()
+    pending_bots = conn.execute("""
+        SELECT b.id, b.name, b.email, b.messaging, b.created_at, b.token,
+               u.username as owner_username,
+               u.preferred_platform as owner_platform,
+               u.platform_user_id as owner_platform_user_id
+        FROM bots b
+        LEFT JOIN users u ON b.user_id = u.id
+        WHERE b.status = 'pending'
+        ORDER BY b.id DESC
+    """).fetchall()
+    conn.close()
+
+    result = []
+    for bot in pending_bots:
+        result.append({
+            "id": bot["id"],
+            "name": bot["name"],
+            "email": bot["email"],
+            "messaging": bot["messaging"],
+            "token": bot["token"],
+            "created_at": bot["created_at"],
+            "owner_username": bot["owner_username"],
+            "platform": bot["owner_platform"],
+            "platform_user_id": bot["owner_platform_user_id"]
+        })
+
+    return jsonify({"pending_bots": result, "count": len(result)})
+
+
 @app.route("/admin/bot/<int:bot_id>/activate", methods=["POST"])
 @admin_required_route
 def admin_activate_bot(bot_id):
@@ -2817,7 +2865,7 @@ def _require_export_auth():
         return True
     conn = get_db_connection()
     admin = conn.execute(
-        """SELECT id, password_hash FROM users u
+        """SELECT u.id, u.password_hash FROM users u
             JOIN user_roles ur ON u.id = ur.user_id
             JOIN roles r ON ur.role_id = r.id
             WHERE r.name = 'admin'
