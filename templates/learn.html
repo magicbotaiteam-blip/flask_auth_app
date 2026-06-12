@@ -14,18 +14,18 @@
         :root {
             --primary: #6366f1;
             --primary-dark: #4f46e5;
-            --dark-bg: #0b0e1a;
-            --card-bg: #141829;
-            --border-color: rgba(99, 102, 241, 0.15);
+            --light-bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
         }
         body {
             font-family: 'Poppins', sans-serif;
-            background: var(--dark-bg);
-            color: #e2e8f0;
+            background: var(--light-bg);
+            color: #1e293b;
             min-height: 100vh;
         }
         .hero-learn {
-            background: linear-gradient(135deg, #0b0e1a 0%, #141829 50%, #1a1040 100%);
+            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 50%, #faf5ff 100%);
             padding: 4rem 0 3rem;
             border-bottom: 1px solid var(--border-color);
         }
@@ -35,28 +35,30 @@
             border-radius: 16px;
             padding: 2rem;
             margin-bottom: 2rem;
-            transition: transform .2s;
+            transition: transform .2s, box-shadow .2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
         }
         .section-card:hover {
             transform: translateY(-2px);
-            border-color: rgba(99, 102, 241, 0.3);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.08);
+            border-color: #c7d2fe;
         }
         .code-block {
-            background: #0d1117;
+            background: #f8fafc;
             border-radius: 12px;
             padding: 1.25rem;
             font-family: 'SF Mono', 'Fira Code', monospace;
             font-size: 0.875rem;
-            color: #c9d1d9;
-            border: 1px solid #30363d;
+            color: #334155;
+            border: 1px solid #e2e8f0;
             overflow-x: auto;
             position: relative;
             margin: 1rem 0;
         }
-        .code-block .keyword { color: #ff7b72; }
-        .code-block .string { color: #a5d6ff; }
-        .code-block .comment { color: #8b949e; font-style: italic; }
-        .code-block .number { color: #79c0ff; }
+        .code-block .keyword { color: #b91c1c; }
+        .code-block .string { color: #0369a1; }
+        .code-block .comment { color: #64748b; font-style: italic; }
+        .code-block .number { color: #7c3aed; }
         .badge-use {
             display: inline-block;
             padding: 0.25rem 0.75rem;
@@ -66,12 +68,12 @@
             margin-right: 0.5rem;
             margin-bottom: 0.5rem;
         }
-        .badge-use.green { background: rgba(74, 222, 128, 0.15); color: #4ade80; }
-        .badge-use.blue { background: rgba(96, 165, 250, 0.15); color: #60a5fa; }
-        .badge-use.purple { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
-        .badge-use.orange { background: rgba(251, 146, 60, 0.15); color: #fb923c; }
-        .badge-use.pink { background: rgba(244, 114, 182, 0.15); color: #f472b6; }
-        .badge-use.cyan { background: rgba(34, 211, 238, 0.15); color: #22d3ee; }
+        .badge-use.green { background: #dcfce7; color: #166534; }
+        .badge-use.blue { background: #dbeafe; color: #1e40af; }
+        .badge-use.purple { background: #ede9fe; color: #5b21b6; }
+        .badge-use.orange { background: #ffedd5; color: #9a3412; }
+        .badge-use.pink { background: #fce7f3; color: #9d174d; }
+        .badge-use.cyan { background: #cffafe; color: #155e75; }
         .icon-box {
             width: 48px;
             height: 48px;
@@ -82,12 +84,12 @@
             font-size: 1.5rem;
             margin-bottom: 1rem;
         }
-        .icon-box.green { background: rgba(74, 222, 128, 0.12); color: #4ade80; }
-        .icon-box.blue { background: rgba(96, 165, 250, 0.12); color: #60a5fa; }
-        .icon-box.purple { background: rgba(167, 139, 250, 0.12); color: #a78bfa; }
-        .icon-box.orange { background: rgba(251, 146, 60, 0.12); color: #fb923c; }
-        .icon-box.pink { background: rgba(244, 114, 182, 0.12); color: #f472b6; }
-        .icon-box.cyan { background: rgba(34, 211, 238, 0.12); color: #22d3ee; }
+        .icon-box.green { background: #dcfce7; color: #16a34a; }
+        .icon-box.blue { background: #dbeafe; color: #2563eb; }
+        .icon-box.purple { background: #ede9fe; color: #7c3aed; }
+        .icon-box.orange { background: #ffedd5; color: #ea580c; }
+        .icon-box.pink { background: #fce7f3; color: #db2777; }
+        .icon-box.cyan { background: #cffafe; color: #0891b2; }
         .step-badge {
             display: inline-flex;
             align-items: center;
@@ -103,7 +105,7 @@
             flex-shrink: 0;
         }
         .toc-link {
-            color: #94a3b8;
+            color: #64748b;
             text-decoration: none;
             display: block;
             padding: 0.4rem 0;
@@ -112,17 +114,12 @@
             transition: color .2s;
         }
         .toc-link:hover {
-            color: #e2e8f0;
+            color: #334155;
         }
         .toc-link.active {
             color: var(--primary);
             font-weight: 600;
         }
-        .keyword { color: #ff7b72; }
-        .string { color: #a5d6ff; }
-        .comment { color: #8b949e; }
-        .function { color: #d2a8ff; }
-        .method { color: #ffa657; }
         @media (max-width: 768px) {
             .toc-col { display: none; }
         }
@@ -131,19 +128,19 @@
             font-size: 1.75rem;
             margin-top: 3rem;
             margin-bottom: 1.5rem;
-            color: #f1f5f9;
+            color: #0f172a;
         }
         h2:first-of-type { margin-top: 0; }
         h3 {
             font-weight: 600;
             font-size: 1.2rem;
             margin-top: 1.5rem;
-            color: #e2e8f0;
+            color: #1e293b;
         }
         h4 {
             font-weight: 600;
             font-size: 1.05rem;
-            color: #cbd5e1;
+            color: #334155;
         }
         .prompt-label {
             font-size: 0.75rem;
@@ -170,7 +167,7 @@
                 <div class="col-lg-8">
                     <p class="text-primary fw-semibold mb-2" style="letter-spacing: 0.05em;">LEARN</p>
                     <h1 class="display-4 fw-bold mb-3">What Can an AI Agent <span style="color: var(--primary);">Actually Do?</span></h1>
-                    <p class="lead mb-0" style="color: #94a3b8; max-width: 600px;">
+                    <p class="lead mb-0" style="color: #475569; max-width: 600px;">
                         AI bots aren't just chatbots. They run on schedules, send emails, search the web, check prices,
                         and report back — all without you lifting a finger. Here's how.
                     </p>
@@ -216,7 +213,7 @@
                                     </div>
                                     <div>
                                         <h4>Search the Web</h4>
-                                        <p class="small" style="color: #94a3b8;">Look up prices, news, weather, flights — anything online.</p>
+                                        <p class="small" style="color: #475569;">Look up prices, news, weather, flights — anything online.</p>
                                     </div>
                                 </div>
                             </div>
@@ -227,7 +224,7 @@
                                     </div>
                                     <div>
                                         <h4>Send Emails</h4>
-                                        <p class="small" style="color: #94a3b8;">Compose and send reports, alerts, or daily digests automatically.</p>
+                                        <p class="small" style="color: #475569;">Compose and send reports, alerts, or daily digests automatically.</p>
                                     </div>
                                 </div>
                             </div>
@@ -238,7 +235,7 @@
                                     </div>
                                     <div>
                                         <h4>Analyze Data</h4>
-                                        <p class="small" style="color: #94a3b8;">Check stock prices, compute metrics, summarize trends.</p>
+                                        <p class="small" style="color: #475569;">Check stock prices, compute metrics, summarize trends.</p>
                                     </div>
                                 </div>
                             </div>
@@ -249,7 +246,7 @@
                                     </div>
                                     <div>
                                         <h4>Run on a Schedule</h4>
-                                        <p class="small" style="color: #94a3b8;">Do the same task every morning, every hour, or every Monday.</p>
+                                        <p class="small" style="color: #475569;">Do the same task every morning, every hour, or every Monday.</p>
                                     </div>
                                 </div>
                             </div>
@@ -268,19 +265,19 @@
                         <div class="row g-3 mt-2">
                             <div class="col-md-6">
                                 <div class="badge-use green">✅ Every morning 8:00 AM</div>
-                                <p class="small mb-0" style="color: #94a3b8;">"Check grocery deals and email me the best prices"</p>
+                                <p class="small mb-0" style="color: #475569;">"Check grocery deals and email me the best prices"</p>
                             </div>
                             <div class="col-md-6">
                                 <div class="badge-use blue">✅ Every trading day 9:00 AM</div>
-                                <p class="small mb-0" style="color: #94a3b8;">"Run stock screener and post top 3 stocks to my group"</p>
+                                <p class="small mb-0" style="color: #475569;">"Run stock screener and post top 3 stocks to my group"</p>
                             </div>
                             <div class="col-md-6">
                                 <div class="badge-use purple">✅ Every Monday 10:00 AM</div>
-                                <p class="small mb-0" style="color: #94a3b8;">"Search for cruise deals and send the best ones"</p>
+                                <p class="small mb-0" style="color: #475569;">"Search for cruise deals and send the best ones"</p>
                             </div>
                             <div class="col-md-6">
                                 <div class="badge-use orange">✅ Every day 9:00 AM</div>
-                                <p class="small mb-0" style="color: #94a3b8;">"Send today's weather forecast to my family group"</p>
+                                <p class="small mb-0" style="color: #475569;">"Send today's weather forecast to my family group"</p>
                             </div>
                         </div>
                     </div>
@@ -289,7 +286,7 @@
                 <!-- Section: Real Life Examples -->
                 <div id="section-usecases">
                     <h2><i class="bi bi-rocket-takeoff" style="color: var(--primary);"></i> Real Things AI Agents Do Every Day</h2>
-                    <p style="color: #94a3b8;">These are actual cron jobs running right now. Simple prompts, powerful results.</p>
+                    <p style="color: #475569;">These are actual cron jobs running right now. Simple prompts, powerful results.</p>
 
                     <!-- Example 1 -->
                     <div class="section-card">
@@ -303,7 +300,7 @@
                             </div>
                         </div>
                         <h4>Church Grocery Deal Scanner</h4>
-                        <p style="color: #94a3b8;">Every morning at 8 AM, the agent checks 6 grocery stores (Costco, Walmart, ALDI, Lidl, Great Wall, H-Mart) for deals on chicken thighs, eggs, pork belly, and rice. If prices are below a threshold, it emails the results to the church coordinators.</p>
+                        <p style="color: #475569;">Every morning at 8 AM, the agent checks 6 grocery stores (Costco, Walmart, ALDI, Lidl, Great Wall, H-Mart) for deals on chicken thighs, eggs, pork belly, and rice. If prices are below a threshold, it emails the results to the church coordinators.</p>
                         <div class="prompt-label">Prompt (what you tell the bot):</div>
                         <div class="code-block">
                             # Your daily grocery scanner to find the best bulk prices<br>
@@ -332,7 +329,7 @@
                             </div>
                         </div>
                         <h4>Daily US Stock Radar</h4>
-                        <p style="color: #94a3b8;">Before the market opens at 9 AM ET, the bot runs a technical screener on 15+ major stocks (AAPL, MSFT, NVDA, etc.), pulls fundamentals, ranks the top 3 strongest and bottom 3 riskiest, and posts the report to Telegram.</p>
+                        <p style="color: #475569;">Before the market opens at 9 AM ET, the bot runs a technical screener on 15+ major stocks (AAPL, MSFT, NVDA, etc.), pulls fundamentals, ranks the top 3 strongest and bottom 3 riskiest, and posts the report to Telegram.</p>
                         <div class="prompt-label">Prompt (what you tell the bot):</div>
                         <div class="code-block">
                             Run a pre-market stock scan. Check these tickers:<br>
@@ -362,7 +359,7 @@
                             </div>
                         </div>
                         <h4>Cruise Deal Hunter</h4>
-                        <p style="color: #94a3b8;">Scans Viking River Cruises' promotions page daily for Danube River sailings, looking for free airfare or reduced fare offers. If there's a deal, it emails the details automatically.</p>
+                        <p style="color: #475569;">Scans Viking River Cruises' promotions page daily for Danube River sailings, looking for free airfare or reduced fare offers. If there's a deal, it emails the details automatically.</p>
                         <div class="prompt-label">Prompt (what you tell the bot):</div>
                         <div class="code-block">
                             Check Viking River Cruises for Danube River promotions.<br>
@@ -390,7 +387,7 @@
                             </div>
                         </div>
                         <h4>Flight Price Monitor</h4>
-                        <p style="color: #94a3b8;">Searches for flights from Washington D.C. to Taipei every day, checking price trends across multiple airlines. Sends a summary so you know when to buy.</p>
+                        <p style="color: #475569;">Searches for flights from Washington D.C. to Taipei every day, checking price trends across multiple airlines. Sends a summary so you know when to buy.</p>
                         <div class="prompt-label">Prompt (what you tell the bot):</div>
                         <div class="code-block">
                             Search for flights from <span class="keyword">Washington DC (IAD/DCA)</span> to <span class="keyword">Taipei (TPE)</span>.<br>
@@ -416,7 +413,7 @@
                             </div>
                         </div>
                         <h4>Daily Weather Briefing</h4>
-                        <p style="color: #94a3b8;">Checks the weather for the day and emails a quick morning briefing — temperature, rain chance, and a recommendation (umbrella? jacket?).</p>
+                        <p style="color: #475569;">Checks the weather for the day and emails a quick morning briefing — temperature, rain chance, and a recommendation (umbrella? jacket?).</p>
                         <div class="prompt-label">Prompt (what you tell the bot):</div>
                         <div class="code-block">
                             Check today's weather in <span class="keyword">Fairfax, VA</span>.<br>
@@ -447,46 +444,46 @@
                                     <i class="bi bi-globe"></i>
                                 </div>
                                 <h5 class="mt-2">Web Search</h5>
-                                <p class="small" style="color: #94a3b8;">Search Google for current info, prices, and deals.</p>
+                                <p class="small" style="color: #475569;">Search Google for current info, prices, and deals.</p>
                             </div>
                             <div class="col-md-4">
                                 <div class="icon-box blue">
                                     <i class="bi bi-envelope"></i>
                                 </div>
                                 <h5 class="mt-2">Email</h5>
-                                <p class="small" style="color: #94a3b8;">Send emails to anyone automatically.</p>
+                                <p class="small" style="color: #475569;">Send emails to anyone automatically.</p>
                             </div>
                             <div class="col-md-4">
                                 <div class="icon-box purple">
                                     <i class="bi bi-bar-chart"></i>
                                 </div>
                                 <h5 class="mt-2">Stock Data</h5>
-                                <p class="small" style="color: #94a3b8;">Fetch real-time prices, RSI, P/E ratios.</p>
+                                <p class="small" style="color: #475569;">Fetch real-time prices, RSI, P/E ratios.</p>
                             </div>
                             <div class="col-md-4">
                                 <div class="icon-box orange">
                                     <i class="bi bi-robot"></i>
                                 </div>
                                 <h5 class="mt-2">Telegram Bot</h5>
-                                <p class="small" style="color: #94a3b8;">Post messages, images, and reports to groups.</p>
+                                <p class="small" style="color: #475569;">Post messages, images, and reports to groups.</p>
                             </div>
                             <div class="col-md-4">
                                 <div class="icon-box pink">
                                     <i class="bi bi-cloud-sun"></i>
                                 </div>
                                 <h5 class="mt-2">Weather</h5>
-                                <p class="small" style="color: #94a3b8;">Check current weather and forecasts.</p>
+                                <p class="small" style="color: #475569;">Check current weather and forecasts.</p>
                             </div>
                             <div class="col-md-4">
                                 <div class="icon-box cyan">
                                     <i class="bi bi-gear"></i>
                                 </div>
                                 <h5 class="mt-2">Custom Tools</h5>
-                                <p class="small" style="color: #94a3b8;">Install new skills to extend your bot's abilities.</p>
+                                <p class="small" style="color: #475569;">Install new skills to extend your bot's abilities.</p>
                             </div>
                         </div>
-                        <div class="mt-4 p-3" style="background: #0d1117; border-radius: 12px; border: 1px solid #30363d;">
-                            <p class="small mb-0" style="color: #94a3b8;">
+                        <div class="mt-4 p-3" style="background: #f0f4ff; border-radius: 12px; border: 1px solid #c7d2fe;">
+                            <p class="small mb-0" style="color: #475569;">
                                 <i class="bi bi-info-circle" style="color: var(--primary);"></i>
                                 <strong>Pro tip:</strong> Skills are modular. Want your bot to track crypto prices?
                                 Install a crypto skill. Want it to generate images? Install an image skill.
@@ -499,7 +496,7 @@
                 <!-- Section: Prompt Examples -->
                 <div id="section-prompts">
                     <h2><i class="bi bi-chat-dots" style="color: var(--primary);"></i> 3 Simple Prompts to Try Right Now</h2>
-                    <p style="color: #94a3b8;">Just copy-paste any of these into your bot. No technical knowledge needed.</p>
+                    <p style="color: #475569;">Just copy-paste any of these into your bot. No technical knowledge needed.</p>
 
                     <div class="section-card">
                         <span class="badge-use green">Prompt 1</span>
@@ -538,21 +535,21 @@
                             <div class="step-badge">1</div>
                             <div>
                                 <h4 class="mb-1">Register your bot</h4>
-                                <p class="small" style="color: #94a3b8;">Click <strong>"Create New Bot"</strong> on the dashboard. Give it a name and a platform (Telegram is the easiest to start with).</p>
+                                <p class="small" style="color: #475569;">Click <strong>"Create New Bot"</strong> on the dashboard. Give it a name and a platform (Telegram is the easiest to start with).</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-start mb-4">
                             <div class="step-badge">2</div>
                             <div>
                                 <h4 class="mb-1">Write a simple prompt</h4>
-                                <p class="small" style="color: #94a3b8;">Start with something easy like "Check the weather and post it to my Telegram group every morning." You can always change it later.</p>
+                                <p class="small" style="color: #475569;">Start with something easy like "Check the weather and post it to my Telegram group every morning." You can always change it later.</p>
                             </div>
                         </div>
                         <div class="d-flex align-items-start">
                             <div class="step-badge">3</div>
                             <div>
                                 <h4 class="mb-1">Set a schedule (or don't)</h4>
-                                <p class="small" style="color: #94a3b8;">You can set a cron schedule like <code>0 9 * * 1-5</code> (every weekday at 9 AM) or leave it as a manual bot that only responds when you message it.</p>
+                                <p class="small" style="color: #475569;">You can set a cron schedule like <code>0 9 * * 1-5</code> (every weekday at 9 AM) or leave it as a manual bot that only responds when you message it.</p>
                             </div>
                         </div>
                         <div class="mt-4 text-center">
