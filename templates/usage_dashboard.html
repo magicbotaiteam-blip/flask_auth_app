@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Usage Dashboard - AI Magic Bot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <style>
+        .usage-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        .usage-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .usage-card .label {
+            font-size: 0.75rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+        .usage-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        .usage-card .sub {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 0.25rem;
+        }
+
+        .time-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .time-tab {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 0.4rem 1rem;
+            color: #64748b;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.15s;
+        }
+        .time-tab:hover { border-color: #c7d2fe; }
+        .time-tab.active {
+            background: #7c3aed;
+            border-color: #7c3aed;
+            color: #fff;
+        }
+
+        .bot-usage-row {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            transition: box-shadow .2s;
+        }
+        .bot-usage-row:hover { box-shadow: 0 4px 12px rgba(99,102,241,0.08); }
+
+        .bot-usage-row .bot-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #ede9fe;
+            color: #7c3aed;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        .bot-usage-row .bot-name {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .bot-usage-row .bot-platform {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .mini-chart {
+            height: 60px;
+            width: 180px;
+        }
+
+        .no-data-state {
+            text-align: center;
+            padding: 3rem;
+            color: #94a3b8;
+        }
+        .no-data-state .icon { font-size: 3rem; margin-bottom: 1rem; }
+
+        .usage-empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+        }
+
+        .stat-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 0.25rem 0.75rem;
+            font-size: 0.8rem;
+            color: #475569;
+        }
+        .stat-pill .num { font-weight: 600; color: #0f172a; }
+
+        @media (max-width: 768px) {
+            .bot-usage-row .d-flex.align-items-center.gap-3 {
+                flex-wrap: wrap;
+            }
+            .mini-chart {
+                width: 100%;
+                margin-top: 0.75rem;
+            }
+        }
+    </style>
+</head>
+<body class="sidebar-layout">
+    {% with active_page='usage' %}
+    {% include '_sidebar.html' %}
+    {% endwith %}
+
+    <div class="sidebar-content">
+    <div class="page-header">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2><i class="bi bi-graph-up"></i> Usage Dashboard</h2>
+                    <p class="lead mb-0">Token usage, model calls, and activity across your bots</p>
+                </div>
+                <div>
+                    <a href="/" class="btn btn-light"><i class="bi bi-house"></i> Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mb-5">
+
+        <!-- Summary Cards -->
+        <div class="usage-summary">
+            <div class="usage-card">
+                <div class="label">Total Tokens</div>
+                <div class="value" id="totalTokens">—</div>
+                <div class="sub" id="totalTokensDetail"></div>
+            </div>
+            <div class="usage-card">
+                <div class="label">Model Calls</div>
+                <div class="value" id="totalCalls">—</div>
+                <div class="sub">API requests</div>
+            </div>
+            <div class="usage-card">
+                <div class="label">Active Days</div>
+                <div class="value" id="totalDays">—</div>
+                <div class="sub">Across all bots</div>
+            </div>
+            <div class="usage-card">
+                <div class="label">Active Bots</div>
+                <div class="value" id="activeBots">—</div>
+                <div class="sub">With usage in period</div>
+            </div>
+        </div>
+
+        <!-- Time Tabs -->
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="time-tabs" id="timeTabs">
+                <span class="time-tab active" data-days="7">Last 7 Days</span>
+                <span class="time-tab" data-days="30">Last 30 Days</span>
+                <span class="time-tab" data-days="1">Today</span>
+                <span class="time-tab" data-days="0">All Time</span>
+            </div>
+            <span class="small text-muted" id="updateTime"></span>
+        </div>
+
+        <!-- Per-Bot Cards -->
+        <div id="botUsageContainer">
+            <div class="no-data-state">
+                <div class="icon">📊</div>
+                <h4>Loading usage data...</h4>
+            </div>
+        </div>
+
+    </div>
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const botUsageData = {{ chart_data|safe }};
+const botsMeta = {{ bots_meta|safe }};
+const currentRenderDays = { value: 7 };
+
+function formatTokens(n) {
+    if (n >= 1000000000) return (n / 1000000000).toFixed(2) + 'B';
+    if (n >= 1000000) return (n / 1000000).toFixed(2) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
+    return n.toString();
+}
+
+function filterByDays(entries, days) {
+    if (days === 0 || !entries || entries.length === 0) return entries;
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - days);
+    return entries.filter(d => new Date(d.date) >= cutoff);
+}
+
+function renderDashboard(days) {
+    currentRenderDays.value = days;
+    const container = document.getElementById('botUsageContainer');
+
+    let totalTokens = 0, totalCalls = 0;
+    const uniqueDates = new Set();
+    let activeBotCount = 0;
+    let cardsHtml = '';
+
+    // Process each bot
+    Object.keys(botUsageData).forEach((botName) => {
+        const daily = filterByDays(botUsageData[botName].daily || [], days);
+        if (daily.length === 0) return;
+
+        const periodTokens = daily.reduce((s, d) => s + d.tokens, 0);
+        const periodCalls = daily.reduce((s, d) => s + d.calls, 0);
+        const periodCost = daily.reduce((s, d) => s + (d.cost || 0), 0);
+
+        totalTokens += periodTokens;
+        totalCalls += periodCalls;
+        daily.forEach(d => uniqueDates.add(d.date));
+        activeBotCount++;
+
+        const meta = botsMeta[botName] || {};
+        const botId = meta.id || '';
+        const platform = meta.platform || 'OpenClaw';
+        const icon = platform === 'Telegram' ? 'bi-telegram' : platform === 'Discord' ? 'bi-discord' : 'bi-robot';
+        const colorClasses = ['#ede9fe', '#dbeafe', '#dcfce7', '#ffedd5', '#fce7f3', '#cffafe'];
+        const colorIdx = Object.keys(botUsageData).indexOf(botName) % colorClasses.length;
+
+        // Estimate input/output
+        const totalAgentToken = botUsageData[botName].total_tokens || 0;
+        const totalAgentInput = botUsageData[botName].total_input || 0;
+        const avgInPct = totalAgentToken > 0 ? totalAgentInput / totalAgentToken : 0.8;
+        const periodInput = Math.round(periodTokens * avgInPct);
+        const periodOutput = periodTokens - periodInput;
+
+        // Sparkline data
+        const chartLabels = daily.map(d => d.date.substring(5));
+        const chartValues = daily.map(d => d.tokens);
+        const chartId = 'spark-' + botName.replace(/[^a-zA-Z0-9]/g, '-');
+
+        cardsHtml += `
+            <div class="bot-usage-row">
+                <div class="d-flex align-items-start justify-content-between">
+                    <div class="d-flex align-items-center gap-3 flex-grow-1">
+                        <div class="bot-icon" style="background: ${colorClasses[colorIdx]}">
+                            <i class="bi ${icon}"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bot-name">${botName.replace('_agent', '').replace(/_/g, ' ')}</div>
+                                ${botId ? `<span class="badge rounded-pill" style="background: #ede9fe; color: #5b21b6; font-size: 0.7rem;">bot #${botId}</span>` : ''}
+                            </div>
+                            <div class="d-flex flex-wrap gap-2 mt-1">
+                                <span class="stat-pill"><span class="num">${formatTokens(periodTokens)}</span> tokens</span>
+                                <span class="stat-pill"><span class="num">${periodCalls}</span> calls</span>
+                                <span class="stat-pill"><span class="num">${daily.length}</span> days</span>
+                                ${periodCost > 0 ? `<span class="stat-pill">≈ $${periodCost.toFixed(2)}</span>` : ''}
+                            </div>
+                            <div class="small text-muted mt-1">
+                                ${formatTokens(periodInput)} in · ${formatTokens(periodOutput)} out
+                                ${botUsageData[botName].models ? ' · ' + botUsageData[botName].models.slice(0, 2).join(', ') : ''}
+                            </div>
+                        </div>
+                        <div class="mini-chart flex-shrink-0">
+                            <canvas id="${chartId}"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Defer chart rendering
+        setTimeout(() => {
+            const canvas = document.getElementById(chartId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        data: chartValues,
+                        borderColor: '#7c3aed',
+                        backgroundColor: 'rgba(124, 58, 237, 0.08)',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0,
+                        borderWidth: 2,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false }, tooltip: { enabled: false } },
+                    scales: {
+                        x: { display: false, grid: { display: false } },
+                        y: { display: false, beginAtZero: true, grid: { display: false } }
+                    }
+                }
+            });
+        }, 50);
+    });
+
+    // Update summary
+    document.getElementById('totalTokens').textContent = formatTokens(totalTokens);
+    document.getElementById('totalTokensDetail').textContent = `${activeBotCount} bot${activeBotCount > 1 ? 's' : ''}`;
+    document.getElementById('totalCalls').textContent = totalCalls;
+    document.getElementById('totalDays').textContent = uniqueDates.size;
+    document.getElementById('activeBots').textContent = activeBotCount;
+
+    container.innerHTML = cardsHtml || `
+        <div class="no-data-state">
+            <div class="icon">📊</div>
+            <h4>No Usage Data Yet</h4>
+            <p>Your bots haven't recorded any activity in this period.<br>Run your bots or change the time filter.</p>
+        </div>
+    `;
+
+    document.getElementById('updateTime').textContent = 'Updated ' + new Date().toLocaleString();
+}
+
+// Tab switching
+document.getElementById('timeTabs').addEventListener('click', function(e) {
+    const tab = e.target.closest('.time-tab');
+    if (!tab) return;
+    document.querySelectorAll('.time-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    renderDashboard(parseInt(tab.dataset.days));
+});
+
+// Initial render
+renderDashboard(7);
+</script>
+
+</body>
+</html>

@@ -49,6 +49,14 @@
         </a>
     </div>
 
+    <!-- Analytics -->
+    <div class="sidebar-section">
+        <div class="sidebar-section-title">Analytics</div>
+        <a href="/usage" class="sidebar-item {% if active_page == 'usage' %}active{% endif %}">
+            <i class="bi bi-graph-up"></i> Usage Dashboard
+        </a>
+    </div>
+
     <!-- Resources -->
     <div class="sidebar-section">
         <div class="sidebar-section-title">Resources</div>
@@ -56,7 +64,7 @@
             <i class="bi bi-book"></i> Learn AI Agents
         </a>
         <a href="/features/qa" class="sidebar-item">
-            <i class="bi bi-stars"></i> Features
+            <i class="bi bi-stars"></i> Q&A
         </a>
         <a href="/referral-program" class="sidebar-item {% if active_page == 'referrer' %}active{% endif %}">
             <i class="bi bi-gift"></i> Refer & Earn
@@ -73,8 +81,8 @@
         <a href="{{ url_for('find_users') }}" class="sidebar-item">
             <i class="bi bi-people"></i> Users
         </a>
-        <a href="/usage" class="sidebar-item {% if active_page == 'usage' %}active{% endif %}">
-            <i class="bi bi-chat-dots"></i> Usages
+        <a href="/usage/admin" class="sidebar-item {% if active_page == 'usage_admin' %}active{% endif %}">
+            <i class="bi bi-bar-chart"></i> Detailed Usage (All)
         </a>
         <a href="/admin/contacts" class="sidebar-item {% if active_page == 'admin_contacts' %}active{% endif %}">
             <i class="bi bi-chat-dots"></i> Contacts

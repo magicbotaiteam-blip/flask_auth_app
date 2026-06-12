@@ -2429,10 +2429,110 @@ def user_bots(user_id):
 
 @app.route("/usage")
 def usage_page():
+    """Usage dashboard — shows token usage, model calls, and activity for the user's own bots"""
+    import json, os
+
+    usage_dir = os.environ.get("USAGE_DATA_DIR", "/Users/siyang/.openclaw/workspace-coding")
+    usage_file = os.path.join(usage_dir, "usage_data.json")
+
+    all_usage = []
+    if os.path.exists(usage_file):
+        with open(usage_file) as f:
+            try:
+                all_usage = json.load(f)
+            except:
+                all_usage = []
+
+    user_id = session.get("user_id")
+    role = session.get("role", "customer")
+
+    # Get user's bots from database
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    if role == "admin":
+        cursor.execute("SELECT id, name FROM bots ORDER BY name")
+    else:
+        cursor.execute("SELECT id, name FROM bots WHERE user_id = ? ORDER BY name", (user_id,))
+    user_bots = cursor.fetchall()
+    conn.close()
+
+    # Map bot names to agent names (try both bot_name + "_agent" and fuzzy match)
+    bot_agent_map = {}
+    for bot in user_bots:
+        bot_name = bot["name"]
+        bot_name_lower = bot_name.lower()
+        # Build candidate agent names
+        candidates = [
+            bot_name_lower + "_agent",
+            bot_name_lower.replace(" ", "_").replace("-", "_") + "_agent",
+            bot_name_lower.replace("_", "") + "_agent",
+        ]
+        matched = None
+        for u in all_usage:
+            agent_name = u.get("agent", "").lower()
+            # Direct match or contain match
+            if agent_name in candidates or any(c in agent_name for c in [bot_name_lower]):
+                matched = u
+                break
+        if matched:
+            bot_agent_map[matched["agent"]] = {
+                "id": bot["id"],
+                "name": bot_name
+            }
+
+    # Build chart data = usage entries for this user's bots
+    chart_data = {}
+    bots_meta = {}
+    for u in all_usage:
+        agent_name = u["agent"]
+        if agent_name in bot_agent_map:
+            chart_data[agent_name] = {
+                "daily": u.get("daily", []),
+                "total_tokens": u.get("total_tokens", 0),
+                "total_input": u.get("total_input", 0),
+                "total_output": u.get("total_output", 0),
+                "total_calls": u.get("total_calls", 0),
+                "models": u.get("models", []),
+                "total_cost": u.get("total_cost", 0),
+            }
+            bots_meta[agent_name] = bot_agent_map[agent_name]
+
+    # If admin, also show unmatched/unowned agents (system agents like writer, coding, main, etc.)
+    if role == "admin":
+        for u in all_usage:
+            agent_name = u["agent"]
+            if agent_name not in bot_agent_map and agent_name in ("writer", "coding", "main"):
+                chart_data[agent_name] = {
+                    "daily": u.get("daily", []),
+                    "total_tokens": u.get("total_tokens", 0),
+                    "total_input": u.get("total_input", 0),
+                    "total_output": u.get("total_output", 0),
+                    "total_calls": u.get("total_calls", 0),
+                    "models": u.get("models", []),
+                    "total_cost": u.get("total_cost", 0),
+                }
+                bots_meta[agent_name] = {
+                    "id": None,
+                    "name": agent_name.replace("_", " ").title() + " (System)",
+                    "platform": "System"
+                }
+
+    return render_template(
+        "usage_dashboard.html",
+        chart_data=json.dumps(chart_data),
+        bots_meta=json.dumps(bots_meta),
+        username=session.get("username"),
+        role=role
+    )
+
+@app.route("/usage/admin")
+def usage_admin():
+    """Admin-only detailed usage page (original)"""
     if session.get("role") != "admin":
         flash("Access denied. Admin privileges required.", "error")
         return redirect(url_for("index"))
     return render_template("usage.html")
+
 
 @app.route("/usage_data.json")
 def usage_data():
@@ -2444,6 +2544,7 @@ def usage_data():
     if not os.path.exists(usage_file):
         return jsonify({"error": "Usage data file not found. The usage report may not have been generated yet."}), 404
     return send_from_directory(usage_dir, "usage_data.json")
+
 
 @app.route("/refresh-usage")
 def refresh_usage():
