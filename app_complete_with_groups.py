@@ -2427,135 +2427,42 @@ def user_bots(user_id):
 
 # ==================== Usage Tracking Page ====================
 
-def get_usage_db():
-    """Get the usage cache database connection"""
-    db_path = os.environ.get("USAGE_DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "usage_cache.db"))
-    conn = sqlite3.connect(db_path)
-    conn.row_factory = sqlite3.Row
-    return conn
+# Usage data is generated locally on the Mac by usage-report.sh,
+# then pushed to S3 every 30 min by push-usage-to-s3.sh (via cron).
+# The Flask app reads it from S3 (works on both local and ECS).
+#
+# Setup:
+#   S3 bucket: flask-auth-app-uploads (pre-existing)
+#   S3 path:   usage/usage_data.json
+#   Env var:   S3_BUCKET_NAME=flask-auth-app-uploads (already set in ECS)
 
 
-def init_usage_db():
-    """Initialize the usage cache schema"""
-    conn = get_usage_db()
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS usage_cache (
-            agent TEXT NOT NULL,
-            date TEXT NOT NULL,
-            calls INTEGER DEFAULT 0,
-            tokens INTEGER DEFAULT 0,
-            input_tokens INTEGER DEFAULT 0,
-            output_tokens INTEGER DEFAULT 0,
-            cost REAL DEFAULT 0,
-            models TEXT DEFAULT '[]',
-            PRIMARY KEY (agent, date)
-        )
-    """)
-    conn.execute("""
-        CREATE TABLE IF NOT EXISTS usage_cache_meta (
-            agent TEXT PRIMARY KEY,
-            total_runs INTEGER DEFAULT 0,
-            models TEXT DEFAULT '[]',
-            first_seen TEXT,
-            last_seen TEXT
-        )
-    """)
-    conn.commit()
-    conn.close()
+def load_usage_data_from_s3():
+    """Load usage_data.json from S3 bucket. Returns dict or empty list on failure."""
+    import boto3
 
-
-# Initialize on import
-init_usage_db()
-# Required env var on ECS: USAGE_API_KEY — shared secret for the /api/usage/ingest endpoint
-# On local Mac: USAGE_ECS_URL=https://your-app.com and USAGE_API_KEY (same value)
-
-
-@app.route("/api/usage/ingest", methods=["POST"])
-def api_usage_ingest():
-    """
-    API endpoint for local Mac cron to push usage data.
-    Accepts the same JSON structure as usage_data.json.
-    Protected by a shared API key (set via USAGE_API_KEY env var).
-    """
-    api_key = os.environ.get("USAGE_API_KEY")
-    if api_key:
-        provided_key = request.headers.get("X-API-Key") or request.args.get("key")
-        if provided_key != api_key:
-            return jsonify({"error": "Invalid or missing API key"}), 401
+    bucket = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
+    key = "usage/usage_data.json"
 
     try:
-        data = request.get_json(force=True)
-    except:
-        return jsonify({"error": "Invalid JSON"}), 400
-
-    if not isinstance(data, list):
-        return jsonify({"error": "Expected an array of agent usage objects"}), 400
-
-    conn = get_usage_db()
-    total_agents = 0
-    total_days = 0
-
-    for agent_data in data:
-        agent = agent_data.get("agent", "")
-        if not agent:
-            continue
-
-        models = agent_data.get("models", [])
-        models_json = json.dumps(models)
-
-        # Upsert meta
-        conn.execute("""
-            INSERT INTO usage_cache_meta (agent, total_runs, models, first_seen, last_seen)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT(agent) DO UPDATE SET
-                total_runs = excluded.total_runs,
-                models = excluded.models,
-                first_seen = COALESCE(usage_cache_meta.first_seen, excluded.first_seen),
-                last_seen = excluded.last_seen
-        """, (
-            agent,
-            agent_data.get("total_runs", 0),
-            models_json,
-            agent_data.get("first_seen"),
-            agent_data.get("last_seen"),
-        ))
-
-        # Upsert daily entries
-        for day in agent_data.get("daily", []):
-            conn.execute("""
-                INSERT INTO usage_cache (agent, date, calls, tokens, input_tokens, output_tokens, cost, models)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(agent, date) DO UPDATE SET
-                    calls = excluded.calls,
-                    tokens = excluded.tokens,
-                    input_tokens = excluded.input_tokens,
-                    output_tokens = excluded.output_tokens,
-                    cost = excluded.cost,
-                    models = excluded.models
-            """, (
-                agent,
-                day["date"],
-                day.get("calls", 0),
-                day.get("tokens", 0),
-                day.get("input", 0),
-                day.get("output", 0),
-                day.get("cost", 0),
-                day.get("models", models_json),
-            ))
-            total_days += 1
-
-        total_agents += 1
-
-    conn.commit()
-    conn.close()
-    return jsonify({"status": "ok", "agents": total_agents, "days": total_days}), 200
+        s3 = boto3.client("s3")
+        obj = s3.get_object(Bucket=bucket, Key=key)
+        raw = obj["Body"].read().decode("utf-8")
+        return json.loads(raw)
+    except Exception as e:
+        import logging
+        logging.warning(f"Failed to load usage data from S3: {e}")
+        return []
 
 
 @app.route("/usage")
 def usage_page():
-    """Usage dashboard — reads from the usage_cache DB (works both locally and on ECS)"""
+    """Usage dashboard — reads usage data from S3 (works on both local and ECS)"""
     user_id = session.get("user_id")
     role = session.get("role", "customer")
+
+    # Load all usage data from S3
+    all_usage = load_usage_data_from_s3()
 
     # Get user's bots from database
     conn = get_db_connection()
@@ -2566,49 +2473,6 @@ def usage_page():
         cursor.execute("SELECT id, name FROM bots WHERE user_id = ? ORDER BY name", (user_id,))
     user_bots = cursor.fetchall()
     conn.close()
-
-    # Fetch all usage from cache DB
-    usage_conn = get_usage_db()
-    all_meta = usage_conn.execute("SELECT * FROM usage_cache_meta ORDER BY agent").fetchall()
-    all_daily = usage_conn.execute("SELECT * FROM usage_cache ORDER BY agent, date").fetchall()
-    usage_conn.close()
-
-    # Group daily by agent
-    daily_by_agent = {}
-    for row in all_daily:
-        agent = row["agent"]
-        if agent not in daily_by_agent:
-            daily_by_agent[agent] = []
-        daily_by_agent[agent].append({
-            "date": row["date"],
-            "calls": row["calls"],
-            "tokens": row["tokens"],
-            "input": row["input_tokens"],
-            "output": row["output_tokens"],
-            "cost": row["cost"],
-        })
-
-    meta_by_agent = {}
-    for row in all_meta:
-        try:
-            models = json.loads(row["models"])
-        except:
-            models = []
-        meta_by_agent[row["agent"]] = {
-            "total_runs": row["total_runs"],
-            "models": models,
-        }
-
-    all_usage_data = []
-    for agent in daily_by_agent:
-        meta = meta_by_agent.get(agent, {})
-        all_usage_data.append({
-            "agent": agent,
-            "daily": daily_by_agent[agent],
-            "total_tokens": sum(d["tokens"] for d in daily_by_agent[agent]),
-            "total_calls": sum(d["calls"] for d in daily_by_agent[agent]),
-            "models": meta.get("models", []),
-        })
 
     # Map bot names to agent names (fuzzy match)
     bot_agent_map = {}
@@ -2621,7 +2485,7 @@ def usage_page():
             bot_name_lower.replace("_", "") + "_agent",
         ]
         matched = None
-        for u in all_usage_data:
+        for u in all_usage:
             agent_name = u.get("agent", "").lower()
             if agent_name in candidates or any(c in agent_name for c in [bot_name_lower]):
                 matched = u
@@ -2632,36 +2496,36 @@ def usage_page():
                 "name": bot_name
             }
 
-    # Build chart data
+    # Build chart data — only for this user's bots
     chart_data = {}
     bots_meta = {}
-    for u in all_usage_data:
+    for u in all_usage:
         agent_name = u["agent"]
         if agent_name in bot_agent_map:
             chart_data[agent_name] = {
                 "daily": u.get("daily", []),
                 "total_tokens": u.get("total_tokens", 0),
-                "total_input": sum(d.get("input", 0) for d in u.get("daily", [])),
-                "total_output": sum(d.get("output", 0) for d in u.get("daily", [])),
+                "total_input": u.get("total_input", 0),
+                "total_output": u.get("total_output", 0),
                 "total_calls": u.get("total_calls", 0),
                 "models": u.get("models", []),
-                "total_cost": sum(d.get("cost", 0) for d in u.get("daily", [])),
+                "total_cost": u.get("total_cost", 0),
             }
             bots_meta[agent_name] = bot_agent_map[agent_name]
 
     # Admin: also show system agents
     if role == "admin":
-        for u in all_usage_data:
+        for u in all_usage:
             agent_name = u["agent"]
             if agent_name not in bot_agent_map and agent_name in ("writer", "coding", "main"):
                 chart_data[agent_name] = {
                     "daily": u.get("daily", []),
                     "total_tokens": u.get("total_tokens", 0),
-                    "total_input": sum(d.get("input", 0) for d in u.get("daily", [])),
-                    "total_output": sum(d.get("output", 0) for d in u.get("daily", [])),
+                    "total_input": u.get("total_input", 0),
+                    "total_output": u.get("total_output", 0),
                     "total_calls": u.get("total_calls", 0),
                     "models": u.get("models", []),
-                    "total_cost": sum(d.get("cost", 0) for d in u.get("daily", [])),
+                    "total_cost": u.get("total_cost", 0),
                 }
                 bots_meta[agent_name] = {
                     "id": None,
