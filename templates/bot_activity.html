@@ -3,69 +3,56 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bot Activity — OpenClaw</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <title>Bot Activity — Magic Bot AI</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/shared.css') }}">
     <style>
-        :root {
-            --body-bg: #f8fafc;
-            --card-bg: #ffffff;
-            --card-border: #e2e8f0;
-            --text: #1e293b;
-            --text-muted: #64748b;
-            --primary: #6366f1;
-            --primary-light: #eef2ff;
-            --success: #22c55e;
-            --success-bg: #f0fdf4;
-            --error: #ef4444;
-            --error-bg: #fef2f2;
+        /* Activity page specific styles */
+        .activity-header {
+            background: #fff;
+            border-bottom: 1px solid var(--border-color, #e2e8f0);
+            padding: 1.5rem 0;
+            margin-bottom: 1.5rem;
         }
-
-        body {
-            background: var(--body-bg);
-            color: var(--text);
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            min-height: 100vh;
-        }
-
-        .page-header {
-            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-            color: white;
-            padding: 2rem 0;
-            margin-bottom: 2rem;
-        }
-
-        .page-header h1 {
+        .activity-header h1 {
+            font-size: 1.4rem;
             font-weight: 700;
-            font-size: 1.75rem;
+            color: var(--dark-color);
+        }
+        .activity-header p {
+            color: var(--gray-500);
             margin: 0;
+            font-size: 0.9rem;
         }
 
-        .page-header p {
-            opacity: 0.9;
-            margin: 0.25rem 0 0;
-        }
-
-        .card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
+        /* Stats cards */
+        .stat-card {
+            background: #fff;
+            border: 1px solid var(--border-color, #e2e8f0);
             border-radius: 12px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .card-header {
-            background: transparent;
-            border-bottom: 1px solid var(--card-border);
             padding: 1rem 1.25rem;
-            font-weight: 600;
+        }
+        .stat-card .stat-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--dark-color, #1e293b);
+        }
+        .stat-card .stat-label {
+            font-size: 0.78rem;
+            color: var(--gray-500, #64748b);
+            margin-top: 1px;
+        }
+        .stat-card .stat-icon {
+            font-size: 1.4rem;
+            opacity: 0.6;
         }
 
-        /* Activity Timeline */
+        /* Timeline */
         .timeline {
             position: relative;
             padding: 0;
         }
-
         .timeline::before {
             content: '';
             position: absolute;
@@ -73,85 +60,65 @@
             top: 0;
             bottom: 0;
             width: 2px;
-            background: var(--card-border);
+            background: var(--border-color, #e2e8f0);
         }
-
         .timeline-item {
             position: relative;
-            padding: 1rem 0 1rem 3.5rem;
-            border-bottom: 1px solid var(--card-border);
+            padding: 0.85rem 0 0.85rem 3.5rem;
+            border-bottom: 1px solid var(--border-color, #e2e8f0);
         }
-
         .timeline-item:last-child {
             border-bottom: none;
         }
-
         .timeline-dot {
             position: absolute;
             left: 17px;
-            top: 1.25rem;
+            top: 1.1rem;
             width: 16px;
             height: 16px;
             border-radius: 50%;
-            background: var(--primary);
-            border: 3px solid var(--card-bg);
+            background: var(--primary-color, #7c3aed);
+            border: 3px solid #fff;
             z-index: 1;
         }
-
-        .timeline-dot.ok {
-            background: var(--success);
-        }
-
-        .timeline-dot.error {
-            background: var(--error);
-        }
-
-        .timeline-dot.unknown {
-            background: var(--text-muted);
-        }
-
+        .timeline-dot.ok { background: var(--success-color, #10b981); }
+        .timeline-dot.error { background: var(--danger-color, #ef4444); }
+        .timeline-dot.unknown { background: var(--gray-400, #94a3b8); }
         .timeline-time {
-            font-size: 0.8rem;
-            color: var(--text-muted);
+            font-size: 0.78rem;
+            color: var(--gray-500, #64748b);
             white-space: nowrap;
         }
-
         .timeline-agent {
             font-weight: 600;
-            font-size: 0.95rem;
+            font-size: 0.92rem;
         }
-
         .timeline-summary {
-            font-size: 0.85rem;
-            color: var(--text-muted);
-            max-width: 600px;
+            font-size: 0.82rem;
+            color: var(--gray-500, #64748b);
+            max-width: 480px;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
         }
-
         .timeline-badge {
-            font-size: 0.7rem;
+            font-size: 0.68rem;
             padding: 2px 8px;
             border-radius: 10px;
             font-weight: 500;
         }
-
         .badge-ok {
-            background: var(--success-bg);
+            background: #f0fdf4;
             color: #15803d;
         }
-
         .badge-error {
-            background: var(--error-bg);
+            background: #fef2f2;
             color: #dc2626;
         }
-
         .badge-cron {
             background: #eef2ff;
             color: #4f46e5;
         }
-
         .badge-user {
             background: #fef3c7;
             color: #b45309;
@@ -164,66 +131,59 @@
             border-radius: 20px;
             font-size: 0.8rem;
             cursor: pointer;
-            border: 1px solid var(--card-border);
-            background: var(--card-bg);
-            color: var(--text-muted);
+            border: 1px solid var(--border-color, #e2e8f0);
+            background: #fff;
+            color: var(--gray-500, #64748b);
             transition: all 0.15s ease;
             margin: 0 4px 6px;
+            user-select: none;
         }
-
         .filter-chip:hover {
-            border-color: var(--primary);
-            color: var(--primary);
+            border-color: var(--primary-color, #7c3aed);
+            color: var(--primary-color, #7c3aed);
         }
-
         .filter-chip.active {
-            background: var(--primary);
+            background: var(--primary-color, #7c3aed);
             color: white;
-            border-color: var(--primary);
+            border-color: var(--primary-color, #7c3aed);
         }
 
-        /* Stats cards */
-        .stat-card {
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
+        /* Card overrides for existing app theme */
+        .section-card {
+            background: #fff;
+            border: 1px solid var(--border-color, #e2e8f0);
             border-radius: 12px;
-            padding: 1rem 1.25rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .section-card .card-body {
+            padding: 1rem;
         }
 
-        .stat-card .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--text);
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
         }
-
-        .stat-card .stat-label {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 2px;
+        .empty-state i {
+            font-size: 3rem;
+            color: var(--gray-300, #cbd5e1);
         }
-
-        .stat-card .stat-icon {
-            font-size: 1.5rem;
-            opacity: 0.7;
+        .empty-state p {
+            color: var(--gray-500, #64748b);
+            margin-top: 0.5rem;
         }
 
         @media (max-width: 768px) {
-            .page-header { padding: 1.25rem 0; }
-            .timeline-item { padding-left: 3rem; }
-            .timeline-summary { max-width: 200px; }
+            .timeline-summary { max-width: 180px; }
         }
     </style>
 </head>
-<body>
+<body class="sidebar-layout">
 
-{% if username %}
-    {% include '_sidebar.html' %}
-    <div class="main-content">
-{% else %}
-    {% include '_navbar_public.html' %}
-    <div style="padding-top: 60px;">
-{% endif %}
+{% include '_sidebar.html' %}
 
+<div class="container-fluid p-0">
+
+    <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             <div class="container mt-3">
@@ -238,10 +198,10 @@
     {% endwith %}
 
     <!-- Page Header -->
-    <div class="page-header">
+    <div class="activity-header">
         <div class="container">
-            <div class="d-flex align-items-center gap-3">
-                <i class="bi bi-activity" style="font-size: 2rem;"></i>
+            <div class="d-flex align-items-center gap-2">
+                <i class="bi bi-activity" style="font-size: 1.6rem; color: var(--primary-color);"></i>
                 <div>
                     <h1>Bot Activity</h1>
                     <p>Timeline of automated bot runs and user interactions</p>
@@ -250,12 +210,13 @@
         </div>
     </div>
 
-    <div class="container pb-5">
+    <div class="container pb-4">
+
         <!-- Stats Row -->
         <div class="row g-3 mb-4">
             <div class="col-6 col-md-3">
                 <div class="stat-card d-flex align-items-center gap-3">
-                    <div><i class="bi bi-arrow-repeat stat-icon text-primary"></i></div>
+                    <div><i class="bi bi-arrow-repeat stat-icon" style="color: var(--primary-color);"></i></div>
                     <div>
                         <div class="stat-value" id="totalRuns">0</div>
                         <div class="stat-label">Total Runs</div>
@@ -264,7 +225,7 @@
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card d-flex align-items-center gap-3">
-                    <div><i class="bi bi-clock-history stat-icon text-success"></i></div>
+                    <div><i class="bi bi-clock-history stat-icon" style="color: var(--success-color);"></i></div>
                     <div>
                         <div class="stat-value" id="todayRuns">0</div>
                         <div class="stat-label">Today</div>
@@ -273,7 +234,7 @@
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card d-flex align-items-center gap-3">
-                    <div><i class="bi bi-robot stat-icon text-warning"></i></div>
+                    <div><i class="bi bi-robot stat-icon" style="color: var(--warning-color);"></i></div>
                     <div>
                         <div class="stat-value" id="cronRuns">0</div>
                         <div class="stat-label">Cron Jobs</div>
@@ -282,7 +243,7 @@
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card d-flex align-items-center gap-3">
-                    <div><i class="bi bi-people stat-icon text-info"></i></div>
+                    <div><i class="bi bi-person-lines-fill stat-icon" style="color: var(--info-color);"></i></div>
                     <div>
                         <div class="stat-value" id="userRuns">0</div>
                         <div class="stat-label">User Messages</div>
@@ -291,30 +252,30 @@
             </div>
         </div>
 
-        <!-- Filters -->
-        <div class="card mb-4">
-            <div class="card-body pb-2">
+        <!-- Filter Chips -->
+        <div class="section-card mb-4">
+            <div class="card-body pb-1">
                 <div class="d-flex flex-wrap align-items-center gap-2 mb-2">
-                    <span class="text-muted" style="font-size: 0.85rem; font-weight: 500;">Filter:</span>
+                    <span class="text-muted" style="font-size: 0.83rem; font-weight: 500;">Filter:</span>
                     <span class="filter-chip active" data-filter="all">All</span>
                     <span class="filter-chip" data-filter="trigger:cron">⏰ Cron Jobs</span>
                     <span class="filter-chip" data-filter="trigger:user">💬 User Messages</span>
-                    <span class="filter-chip" data-filter="status:ok">✅ Success</span>
-                    <span class="filter-chip" data-filter="status:error">❌ Failed</span>
+                    <span class="filter-chip" data-filter="status:ok">✓ Success</span>
+                    <span class="filter-chip" data-filter="status:error">✗ Failed</span>
                 </div>
             </div>
         </div>
 
         <!-- Activity Timeline -->
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <span><i class="bi bi-list-ul me-2"></i>Activity Log</span>
-                <span class="text-muted" style="font-size: 0.8rem;" id="visibleCount"></span>
+        <div class="section-card">
+            <div class="card-header bg-transparent border-bottom d-flex justify-content-between align-items-center px-3 py-3">
+                <span style="font-weight: 600; font-size: 0.92rem;"><i class="bi bi-list-ul me-2"></i>Activity Log</span>
+                <span class="text-muted" style="font-size: 0.78rem;" id="visibleCount"></span>
             </div>
-            <div class="card-body p-0">
+            <div class="px-0">
                 <div class="timeline" id="activityTimeline">
                     {% for run in activity %}
-                    <div class="timeline-item"
+                    <div class="timeline-item px-3"
                          data-agent="{{ run.get('agent', '') }}"
                          data-trigger="{{ run.get('trigger', '') }}"
                          data-status="{{ run.get('status', '') }}">
@@ -358,97 +319,87 @@
                     {% endfor %}
                 </div>
                 {% if not activity %}
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox" style="font-size: 3rem; color: var(--text-muted);"></i>
-                    <p class="text-muted mt-2">No activity data yet. Runs will appear once the cron pushes data.</p>
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <p>No activity data yet. Runs will appear once the cron pushes data.</p>
                 </div>
                 {% endif %}
             </div>
         </div>
     </div>
+</div>
 
-    {% if username %}
-        </div> <!-- .main-content -->
-    {% else %}
-        </div>
-    {% endif %}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// ─── Stats ───
+const items = document.querySelectorAll('.timeline-item');
+const now = new Date();
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // ─── Stats ───
-        const items = document.querySelectorAll('.timeline-item');
-        const now = new Date();
+function updateStats() {
+    const total = items.length;
+    const todayStr = now.toISOString().slice(0, 10);
+    const today = Array.from(items).filter(el => {
+        const ts = el.querySelector('.timeline-time')?.dataset?.ts || '';
+        return ts.startsWith(todayStr);
+    }).length;
+    const cron = Array.from(items).filter(el => el.dataset.trigger === 'cron').length;
+    const user = Array.from(items).filter(el => el.dataset.trigger === 'user').length;
+    document.getElementById('totalRuns').textContent = total;
+    document.getElementById('todayRuns').textContent = today;
+    document.getElementById('cronRuns').textContent = cron;
+    document.getElementById('userRuns').textContent = user;
+}
+updateStats();
 
-        function updateStats() {
-            const total = items.length;
-            const todayStr = now.toISOString().slice(0, 10);
-            const today = Array.from(items).filter(el => {
-                const ts = el.querySelector('.timeline-time')?.dataset?.ts || '';
-                return ts.startsWith(todayStr);
-            }).length;
-            const cron = Array.from(items).filter(el => el.dataset.trigger === 'cron').length;
-            const user = Array.from(items).filter(el => el.dataset.trigger === 'user').length;
+// ─── Filtering ───
+let activeFilter = 'all';
 
-            document.getElementById('totalRuns').textContent = total;
-            document.getElementById('todayRuns').textContent = today;
-            document.getElementById('cronRuns').textContent = cron;
-            document.getElementById('userRuns').textContent = user;
-        }
-        updateStats();
-
-        // ─── Filtering ───
-        let activeFilter = 'all';
-
-        document.querySelectorAll('.filter-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-                chip.classList.add('active');
-                activeFilter = chip.dataset.filter;
-                applyFilter();
-            });
-        });
-
-        function applyFilter() {
-            let visible = 0;
-            items.forEach(el => {
-                let show = true;
-
-                if (activeFilter !== 'all') {
-                    const [type, value] = activeFilter.split(':');
-                    if (type === 'trigger' && el.dataset.trigger !== value) show = false;
-                    if (type === 'status' && el.dataset.status !== value) show = false;
-                }
-
-                el.style.display = show ? '' : 'none';
-                if (show) visible++;
-            });
-
-            document.getElementById('visibleCount').textContent = `${visible} of ${items.length} runs`;
-        }
+document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+        document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeFilter = chip.dataset.filter;
         applyFilter();
+    });
+});
 
-        // ─── Relative timestamps ───
-        function timeAgo(ts) {
-            if (!ts) return '';
-            const d = new Date(ts);
-            const diff = Math.floor((now - d) / 1000);
-            if (diff < 60) return 'just now';
-            if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
-            if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
-            if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
-            return d.toLocaleDateString();
+function applyFilter() {
+    let visible = 0;
+    items.forEach(el => {
+        let show = true;
+        if (activeFilter !== 'all') {
+            const [type, value] = activeFilter.split(':');
+            if (type === 'trigger' && el.dataset.trigger !== value) show = false;
+            if (type === 'status' && el.dataset.status !== value) show = false;
         }
+        el.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('visibleCount').textContent = `${visible} of ${items.length} runs`;
+}
+applyFilter();
 
-        document.querySelectorAll('.timeline-time').forEach(el => {
-            const ts = el.dataset.ts;
-            if (ts) {
-                el.title = ts.slice(0, 19).replace('T', ' ') + ' UTC';
-                const relative = timeAgo(ts);
-                if (relative) {
-                    el.innerHTML = relative;
-                }
-            }
-        });
-    </script>
+// ─── Relative timestamps ───
+function timeAgo(ts) {
+    if (!ts) return '';
+    const d = new Date(ts);
+    const diff = Math.floor((now - d) / 1000);
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+    if (diff < 604800) Math.floor(diff / 86400) + 'd ago';
+    return d.toLocaleDateString();
+}
+
+document.querySelectorAll('.timeline-time').forEach(el => {
+    const ts = el.dataset.ts;
+    if (ts) {
+        el.title = ts.slice(0, 19).replace('T', ' ') + ' UTC';
+        const relative = timeAgo(ts);
+        if (relative) el.innerHTML = relative;
+    }
+});
+</script>
+
 </body>
 </html>

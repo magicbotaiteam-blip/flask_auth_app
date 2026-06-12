@@ -1824,6 +1824,50 @@ def api_pending_bots():
     return jsonify({"pending_bots": result, "count": len(result)})
 
 
+@app.route("/api/contacts/unreplied", methods=["GET"])
+def api_unreplied_contacts():
+    """
+    API endpoint to get contacts that haven't been replied to yet.
+    Uses same auth as api/export/users: session admin or ?api_key=...
+
+    Usage: GET /api/contacts/unreplied
+           GET /api/contacts/unreplied?api_key=<key>
+
+    Returns JSON array of contacts where status != 'replied' and status != 'archived'.
+    Also includes a link to reply.
+    """
+    if session.get('role', 'customer') != 'admin':
+        if not _require_export_auth():
+            return jsonify({"error": "Missing or invalid api_key"}), 401
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT id, name, email, company, message, created_at, status, ip_address, user_agent
+        FROM contacts
+        WHERE status NOT IN ('replied', 'archived')
+        ORDER BY created_at DESC
+    """)
+    rows = cursor.fetchall()
+    conn.close()
+
+    result = []
+    for r in rows:
+        result.append({
+            "id": r["id"],
+            "name": r["name"],
+            "email": r["email"],
+            "company": r["company"],
+            "message": r["message"],
+            "created_at": r["created_at"],
+            "status": r["status"],
+            "ip_address": r["ip_address"],
+            "user_agent": r["user_agent"]
+        })
+
+    return jsonify({"unreplied_contacts": result, "count": len(result)})
+
+
 @app.route("/admin/bot/<int:bot_id>/activate", methods=["POST"])
 @admin_required_route
 def admin_activate_bot(bot_id):
@@ -2554,11 +2598,11 @@ def usage_admin():
 # ─────────────────── Bot Activity Log ───────────────────
 
 def load_bot_runs_from_s3():
-    """Load bot_runs.jsonl from S3 bucket. Returns list of dicts."""
+    """Load bot_runs.json from S3 bucket. Returns list of dicts."""
     import boto3
 
     bucket = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
-    key = "usage/bot_runs.jsonl"
+    key = "usage/bot_runs.json"
 
     try:
         s3 = boto3.client("s3")
@@ -2602,6 +2646,8 @@ def bot_activity():
     for bot in user_bots:
         bot_name = bot["name"]
         bot_name_lower = bot_name.lower()
+        # Try the exact name first, then suffixed variants
+        bot_name_map[bot_name_lower] = bot_name
         candidates = [
             bot_name_lower + "_agent",
             bot_name_lower.replace(" ", "_").replace("-", "_") + "_agent",
@@ -2628,6 +2674,17 @@ def bot_activity():
     for r in all_runs:
         agent = r.get("agent", "")
         source = r.get("source_agent", "")
+
+        # For regular users, only show bots they own
+        # System-wide cron bots (identified by friendly_names) are admin-only
+        if role != "admin":
+            is_system_bot = agent in friendly_names
+            is_user_bot = agent in bot_name_map or source in bot_name_map
+            if is_system_bot and not is_user_bot:
+                continue
+            if not is_system_bot and not is_user_bot:
+                continue
+
         # Determine display name
         display_name = friendly_names.get(agent, "")
         if not display_name:
@@ -2656,7 +2713,8 @@ def bot_activity():
         run_types=json.dumps(run_types),
         friendly_names=json.dumps(friendly_names),
         username=session.get("username"),
-        role=role
+        role=role,
+        active_page="activity"
     )
 
 
