@@ -719,12 +719,10 @@ def admin_contacts():
 @app.route("/api/contacts/<int:contact_id>/status", methods=["PUT"])
 def update_contact_status(contact_id):
     """Update contact status (admin only)"""
-    # Check if user is logged in and is admin
-    if "username" not in session:
-        return jsonify({"success": False, "message": "Authentication required"}), 401
-
+    # Check if user is logged in and is admin, or has valid API key
     if session.get("role") != "admin":
-        return jsonify({"success": False, "message": "Admin privileges required"}), 403
+        if not _require_export_auth():
+            return jsonify({"success": False, "message": "Authentication required"}), 401
 
     try:
         data = request.get_json()
@@ -1274,7 +1272,7 @@ def signup_local():
                 return redirect(url_for("group_dashboard", group_id=group_id))
             else:
                 flash("Account created successfully! Welcome to Magic Bot AI.", "success")
-                return redirect(url_for("index"))
+                return redirect(url_for("profile"))
 
         except Exception as e:
             conn.close()

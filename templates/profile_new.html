@@ -175,6 +175,22 @@
                                 <div class="form-text">
                                     Password must contain at least 8 characters, including uppercase, lowercase, number, and special character
                                 </div>
+                            <!-- Password Fields (hidden for Google users) -->
+                            {% if user.provider != 'google' %}
+                            <div class="mb-3">
+                                <label for="password" class="form-label">New Password (leave blank to keep current)</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" name="password" 
+                                           pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[!@#$%^&*]).{8,}"
+                                           title="Must contain at least 8 characters, one uppercase, one lowercase, one number and one special character"
+                                           placeholder="Enter new password">
+                                    <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    Password must contain at least 8 characters, including uppercase, lowercase, number, and special character
+                                </div>
                                 <div class="password-strength mt-2">
                                     <div class="progress" style="height: 5px;">
                                         <div class="progress-bar" id="passwordStrength" role="progressbar" style="width: 0%"></div>
@@ -182,7 +198,7 @@
                                     <small class="text-muted" id="passwordStrengthText">Password strength: Very weak</small>
                                 </div>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="confirm_password" class="form-label">Confirm New Password</label>
                                 <div class="input-group">
@@ -196,7 +212,8 @@
                                     Passwords must match
                                 </div>
                             </div>
-                            
+                            {% endif %}
+
                             <div class="d-flex justify-content-end gap-2 mt-4">
                                 <a href="/" class="btn btn-secondary">Cancel</a>
                                 <button type="submit" class="btn btn-success">

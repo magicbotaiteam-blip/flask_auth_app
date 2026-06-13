@@ -244,7 +244,24 @@
                 </div>
             `;
             
-            document.getElementById('replyEmail').href = `mailto:${c.email}?subject=Re: Contact Form Inquiry #${c.id}`;
+            document.getElementById('replyEmail').onclick = function(e) {
+                e.preventDefault();
+                var emailHref = `mailto:${c.email}?subject=Re: Contact Form Inquiry #${c.id}`;
+                var self = this;
+                // Call API first, then open email
+                fetch(`/api/contacts/${c.id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'replied' })
+                }).then(function() {
+                    window.location.href = emailHref;
+                    setTimeout(function() { location.reload(); }, 2000);
+                }).catch(function() {
+                    // If API fails, still open email
+                    window.location.href = emailHref;
+                });
+            };
+            document.getElementById('replyEmail').href = '#';
             
             const modal = new bootstrap.Modal(document.getElementById('contactModal'));
             modal.show();
