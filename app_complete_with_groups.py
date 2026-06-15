@@ -17,6 +17,21 @@ import io
 # Database layer - use db.py (SQLite local, PostgreSQL production)
 from db import get_conn as get_db_connection, is_postgres as _is_pg_db, connect as _db_connect
 
+# Trial & referral bonus system
+from trial import (
+    init_trial_tables, ensure_trial_started, get_trial_info,
+    add_bonus_month, log_customer_interaction, update_interaction_status,
+    get_interactions, get_interaction_stats, get_users_near_trial_end
+)
+
+# Payment & billing system (optional, requires Stripe keys)
+from payment import (
+    init_payment_tables, get_billing_info, get_user_subscription_status,
+    create_checkout_session, handle_checkout_completed, cancel_subscription,
+    submit_payment_method, get_pending_submissions, approve_submission, reject_submission,
+    HAS_STRIPE, STRIPE_PUBLISHABLE_KEY
+)
+
 # S3 storage (optional, for production)
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
 S3_ENABLED = bool(os.environ.get("S3_BUCKET_NAME")) or os.path.exists("/.dockerenv")
@@ -339,6 +354,12 @@ def init_db_complete():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # Trial & referral bonus tables
+    init_trial_tables()
+
+    # Payment & billing tables
+    init_payment_tables()
 
     conn.commit()
     conn.close()
@@ -882,26 +903,51 @@ def index():
                     ("google", user_info["id"])
                 ).fetchone()
 
-                # Update any pending referrals that match this email
-                conn.execute("""
-                    UPDATE referrals SET signed_up_user_id = ?
-                    WHERE email = ? AND signed_up_user_id IS NULL
-                """, (user["id"], user_info.get("email")))
+                # Start the free trial for this new Google user
+                ensure_trial_started(user["id"])
 
-                # Check if a referrer referred this user - reward them
+                # Update any pending referrals that match this email
+                matched_referrals = conn.execute("""
+                    SELECT id, referrer_user_id FROM referrals
+                    WHERE email = ? AND signed_up_user_id IS NULL AND referrer_user_id != ?
+                """, (user_info.get("email"), user["id"])).fetchall()
+
+                for ref in matched_referrals:
+                    conn.execute(
+                        "UPDATE referrals SET signed_up_user_id = ?, reward_given = TRUE WHERE id = ?",
+                        (user["id"], ref["id"])
+                    )
+                    conn.execute(
+                        "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
+                        (ref["referrer_user_id"],)
+                    )
+                    add_bonus_month(ref["referrer_user_id"], conn=conn)
+                    log_customer_interaction(ref["referrer_user_id"], "Google Signup", user_info.get("email"), "signed_up", conn=conn)
+                    print(f"[REFERRAL] Referrer {ref['referrer_user_id']} earned 1 credit + 1 bonus month for email match signup {user_info.get('email')}")
+
+                # Check if a referrer referred this user via referral link - reward them
                 referrer_id = session.pop('referrer_id', None)
                 if referrer_id:
                     referrer = conn.execute("SELECT id FROM users WHERE id = ?", (referrer_id,)).fetchone()
                     if referrer and referrer['id'] != user['id']:
-                        conn.execute(
-                            "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
-                            (referrer_id,)
-                        )
-                        conn.execute(
-                            "UPDATE referrals SET reward_given = TRUE WHERE referrer_user_id = ? AND email = ?",
+                        # Check not already rewarded via email match above
+                        already = conn.execute(
+                            "SELECT id FROM referrals WHERE referrer_user_id = ? AND email = ? AND reward_given = TRUE",
                             (referrer_id, user_info.get("email"))
-                        )
-                        print(f"[REFERRAL] Referrer {referrer_id} earned 1 credit for Google-signup {user_info.get('email')}")
+                        ).fetchone()
+                        if not already:
+                            conn.execute(
+                                "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
+                                (referrer_id,)
+                            )
+                            conn.execute(
+                                "UPDATE referrals SET signed_up_user_id = ?, reward_given = TRUE WHERE referrer_user_id = ? AND email = ? AND signed_up_user_id IS NULL",
+                                (user["id"], referrer_id, user_info.get("email"))
+                            )
+                            # Add +1 bonus free month to referrer
+                            add_bonus_month(referrer_id, conn=conn)
+                            log_customer_interaction(referrer_id, "Google Signup", user_info.get("email"), "signed_up", conn=conn)
+                            print(f"[REFERRAL] Referrer {referrer_id} earned 1 credit + 1 bonus trial month for Google-signup {user_info.get('email')}")
 
                 customer_role = conn.execute("SELECT id FROM roles WHERE name = 'customer'").fetchone()
                 conn.execute("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", (user["id"], customer_role["id"]))
@@ -1003,6 +1049,10 @@ def index():
 
     role = session.get("role", "customer")
 
+    # Trial info for dashboard
+    trial_info = get_trial_info(user_id)
+    interaction_stats = get_interaction_stats(user_id)
+
     return render_template("home_with_groups.html",
                          username=session.get("username"),
                          bot_count=bot_count,
@@ -1011,6 +1061,8 @@ def index():
                          recent_groups=recent_groups,
                          referral_credits=referral_credits_val,
                          referral_signed_up=referral_signed_up,
+                         trial_info=trial_info,
+                         interaction_stats=interaction_stats,
                          google=HAS_GOOGLE_OAUTH,
                          role=role,
                          profile_incomplete=not bool(profile_complete))
@@ -1219,31 +1271,56 @@ def signup_local():
                     # Re-commit the user creation
                     conn.commit()
 
-            # Update any pending referrals that match this email
-            conn.execute("""
-                UPDATE referrals SET signed_up_user_id = ?
-                WHERE email = ? AND signed_up_user_id IS NULL
-            """, (user["id"], email))
+            # Start the free trial for this new user
+            ensure_trial_started(user["id"])
 
-            # Check if a referrer referred this user - reward them
+            # Update any pending referrals that match this email and reward referrers
+            matched_referrals = conn.execute("""
+                SELECT id, referrer_user_id FROM referrals
+                WHERE email = ? AND signed_up_user_id IS NULL AND referrer_user_id != ?
+            """, (email, user["id"])).fetchall()
+
+            for ref in matched_referrals:
+                conn.execute(
+                    "UPDATE referrals SET signed_up_user_id = ?, reward_given = TRUE WHERE id = ?",
+                    (user["id"], ref["id"])
+                )
+                conn.execute(
+                    "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
+                    (ref["referrer_user_id"],)
+                )
+                add_bonus_month(ref["referrer_user_id"], conn=conn)
+                log_customer_interaction(ref["referrer_user_id"], "Referral Signup", email, "signed_up", conn=conn)
+                print(f"[REFERRAL] Referrer {ref['referrer_user_id']} earned 1 credit + 1 bonus month for email match signup {email}")
+
+            # Check if a referrer referred this user via referral link - reward them
             referrer_id = session.pop('referrer_id', None)
             if referrer_id:
                 referrer = conn.execute("SELECT id, referral_credits FROM users WHERE id = ?", (referrer_id,)).fetchone()
                 if referrer:
                     # Check that the referrer didn't refer themselves
                     if referrer['id'] != user['id']:
-                        # Grant 1 credit to referrer
-                        conn.execute(
-                            "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
-                            (referrer_id,)
-                        )
-                        # Mark this referral as rewarded
-                        conn.execute(
-                            "UPDATE referrals SET reward_given = TRUE WHERE referrer_user_id = ? AND email = ?",
+                        # Check not already rewarded via email match above
+                        already = conn.execute(
+                            "SELECT id FROM referrals WHERE referrer_user_id = ? AND email = ? AND reward_given = TRUE",
                             (referrer_id, email)
-                        )
-                        print(f"[REFERRAL] Referrer {referrer_id} earned 1 credit for referring {email}")
-                        flash('You were referred by a friend! Welcome! 🎉', 'success')
+                        ).fetchone()
+                        if not already:
+                            conn.execute(
+                                "UPDATE users SET referral_credits = referral_credits + 1 WHERE id = ?",
+                                (referrer_id,)
+                            )
+                            # Mark this referral as rewarded
+                            conn.execute(
+                                "UPDATE referrals SET signed_up_user_id = ?, reward_given = TRUE WHERE referrer_user_id = ? AND email = ? AND signed_up_user_id IS NULL",
+                                (user["id"], referrer_id, email)
+                            )
+                            # Add +1 bonus free month to referrer
+                            add_bonus_month(referrer_id, conn=conn)
+                            # Log this as a successful customer interaction
+                            log_customer_interaction(referrer_id, "Referral Signup", email, "signed_up", conn=conn)
+                            print(f"[REFERRAL] Referrer {referrer_id} earned 1 credit + 1 bonus trial month for referring {email}")
+                            flash('You were referred by a friend! Welcome! 🎉', 'success')
 
             customer_role = conn.execute("SELECT id FROM roles WHERE name = 'customer'").fetchone()
             conn.execute("INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)", (user["id"], customer_role["id"]))
@@ -1426,15 +1503,215 @@ def profile():
 
     conn.close()
 
+    # Trial info
+    trial_info = get_trial_info(user_id)
+    # Interaction stats
+    interaction_stats = get_interaction_stats(user_id)
+    # Customer interactions
+    interactions = get_interactions(user_id)
+
     return render_template("profile_new.html",
                          user=user,
                          bot_count=bot_count,
                          group_count=group_count,
                          recent_activity=recent_activity,
+                         trial_info=trial_info,
+                         interaction_stats=interaction_stats,
+                         interactions=interactions,
                          username=session.get("username"),
                          role=role)
 
+# ==================== Billing / Payment Routes ====================
+
+@app.route("/billing")
+@login_required
+def billing():
+    """Billing & subscription page."""
+    user_id = session["user_id"]
+    billing_info = get_billing_info(user_id)
+    role = session.get("role", "customer")
+    return render_template("billing.html",
+                         billing=billing_info,
+                         has_stripe=HAS_STRIPE,
+                         stripe_key=STRIPE_PUBLISHABLE_KEY,
+                         username=session.get("username"),
+                         role=role)
+
+
+@app.route("/api/billing/subscribe", methods=["POST"])
+@login_required
+def api_subscribe():
+    """Create a Stripe Checkout session for subscription."""
+    user_id = session["user_id"]
+    url = create_checkout_session(
+        user_id,
+        success_url=f"{request.host_url.rstrip('/')}/billing?session_id={{CHECKOUT_SESSION_ID}}",
+        cancel_url=f"{request.host_url.rstrip('/')}/pricing",
+    )
+    if url:
+        return jsonify({"url": url})
+    return jsonify({"error": "Payment system not configured. Please contact sales."}), 400
+
+
+@app.route("/api/billing/cancel", methods=["POST"])
+@login_required
+def api_cancel_subscription():
+    """Cancel subscription."""
+    user_id = session["user_id"]
+    success = cancel_subscription(user_id)
+    if success:
+        flash("Subscription canceled. You will continue to have access until the end of your billing period.", "info")
+    else:
+        flash("No active subscription to cancel.", "warning")
+    return redirect(url_for("billing"))
+
+
+@app.route("/api/billing/checkout-complete", methods=["POST"])
+def api_checkout_webhook():
+    """Handle Stripe webhook for checkout completion.
+    In production, use Stripe webhooks. For simplicity, also handle a direct POST with session_id."""
+    data = request.get_json(silent=True) or request.form
+    session_id = data.get("session_id", "")
+    if session_id:
+        handle_checkout_completed(session_id)
+        return jsonify({"status": "ok"})
+    return jsonify({"error": "No session_id"}), 400
+
+
+@app.route("/api/billing/status")
+@login_required
+def api_billing_status():
+    """JSON endpoint with subscription status."""
+    user_id = session["user_id"]
+    info = get_billing_info(user_id)
+    return jsonify(info)
+
+
+# ==================== Manual Payment Submission ====================
+
+@app.route("/api/billing/submit-payment", methods=["POST"])
+@login_required
+def submit_payment():
+    """Handle manual payment method submission."""
+    user_id = session["user_id"]
+    data = request.form.to_dict()
+
+    # Handle receipt upload
+    receipt_path = None
+    if "receipt" in request.files and request.files["receipt"].filename:
+        file = request.files["receipt"]
+        import uuid
+        ext = file.filename.rsplit(".", 1)[-1] if "." in file.filename else ""
+        filename = f"payment_receipt_{user_id}_{uuid.uuid4().hex[:8]}.{ext}" if ext else f"payment_receipt_{user_id}_{uuid.uuid4().hex[:8]}"
+
+        upload_dir = os.path.join(app.static_folder or "static", "uploads", "payment_submissions", str(user_id))
+        os.makedirs(upload_dir, exist_ok=True)
+        filepath = os.path.join(upload_dir, filename)
+        file.save(filepath)
+        receipt_path = filename
+
+    success = submit_payment_method(user_id, data, receipt_path)
+
+    if success:
+        flash("Payment method submitted! Our team will review and activate your subscription within 24 hours.", "success")
+    else:
+        flash("There was an error submitting your payment. Please try again or contact support.", "danger")
+
+    return redirect(url_for("billing") + "#payment-method")
+
+
+# ==================== Admin: Payment Submissions ====================
+
+@app.route("/admin/payments")
+@login_required
+def admin_payments():
+    """Admin view for reviewing payment submissions."""
+    role = session.get("role", "customer")
+    if role != "admin":
+        flash("Admin access required.", "danger")
+        return redirect(url_for("index"))
+
+    subs = get_pending_submissions()
+    return render_template(
+        "admin_payments.html",
+        submissions=subs,
+        username=session.get("username"),
+        role=role
+    )
+
+
+@app.route("/api/admin/payments/approve/<int:submission_id>", methods=["POST"])
+@login_required
+def api_approve_payment(submission_id):
+    role = session.get("role", "customer")
+    if role != "admin":
+        return jsonify({"error": "Unauthorized"}), 403
+
+    success = approve_submission(submission_id, session["user_id"])
+    if success:
+        flash("Payment approved and subscription activated.", "success")
+    else:
+        flash("Error approving payment.", "danger")
+    return redirect(url_for("admin_payments"))
+
+
+@app.route("/api/admin/payments/reject/<int:submission_id>", methods=["POST"])
+@login_required
+def api_reject_payment(submission_id):
+    role = session.get("role", "customer")
+    if role != "admin":
+        return jsonify({"error": "Unauthorized"}), 403
+
+    reason = request.form.get("reason", "")
+    success = reject_submission(submission_id, session["user_id"], reason)
+    if success:
+        flash("Payment rejected.", "info")
+    else:
+        flash("Error rejecting payment.", "danger")
+    return redirect(url_for("admin_payments"))
+
+
+# ==================== Template Filters ====================
+
+import json
+
+@app.template_filter("fromjson")
+def fromjson_filter(value):
+    """Parse JSON string in Jinja2 templates."""
+    if value and isinstance(value, str):
+        try:
+            return json.loads(value)
+        except (json.JSONDecodeError, TypeError):
+            pass
+    return {}
+
+
 # ==================== Context Processors ====================
+
+@app.context_processor
+def inject_trial_notification():
+    """Inject trial days-remaining notification for logged-in users (skips admins)."""
+    if "user_id" in session and session.get("role") != "admin":
+        # Check once per session if not already shown
+        if not session.get("_trial_notified"):
+            try:
+                trial_info = get_trial_info(session["user_id"])
+                if not trial_info.get("expired") and "days_remaining" in trial_info:
+                    d = trial_info["days_remaining"]
+                    msg = None
+                    if d == 0:
+                        msg = "⚠️ This is the last day of your free trial! Refer friends to earn more free months."
+                    elif 0 < d <= 5:
+                        msg = f"⚠️ Your free trial ends in {d} days! Refer friends to earn extra free months."
+                    elif 0 < d <= 15:
+                        msg = f"📅 Your free trial has {d} days remaining. Refer friends for bonus months!"
+                    if msg:
+                        flash(msg, "warning")
+                session["_trial_notified"] = True
+            except Exception:
+                pass
+    return {}
+
 
 @app.context_processor
 def inject_random_background():
@@ -2790,6 +3067,22 @@ def api_referral_info():
 
 # ==================== Referral Rewards - Redeem Credits ====================
 
+# ==================== Trial Info API ====================
+
+@app.route("/api/trial/info")
+def api_trial_info():
+    """JSON endpoint with trial info for the current user."""
+    if "user_id" not in session:
+        return jsonify({"error": "Not logged in"}), 401
+
+    info = get_trial_info(session["user_id"])
+    stats = get_interaction_stats(session["user_id"])
+    return jsonify({
+        "trial": info,
+        "interactions": stats,
+    })
+
+
 @app.route("/api/referral/redeem", methods=["POST"])
 def api_redeem_credits():
     """Redeem referral credits for a reward"""
@@ -2884,6 +3177,9 @@ def referrer():
                     (user_id, your_name, name, email, relationship, signed_up_user_id)
                 )
                 conn.commit()
+
+                # Log this as a customer interaction (pending until they sign up)
+                log_customer_interaction(user_id, name, email, "pending", conn=conn)
 
                 # If the referred user already exists, immediately reward the referrer
                 if signed_up_user_id and signed_up_user_id != user_id:
@@ -2995,6 +3291,10 @@ def referrer():
         (user_id,)
     ).fetchall()
 
+    # Trial info for referrer page
+    trial_info = get_trial_info(user_id)
+    interaction_stats = get_interaction_stats(user_id)
+
     # Build referral link with ref parameter
     referral_link = f"{request.host_url.rstrip('/')}/signup_local?ref={user_id}"
 
@@ -3014,6 +3314,9 @@ def referrer():
                            all_tiers=all_tiers,
                            redemptions=redemptions,
                            referral_link=referral_link,
+                           trial_info=trial_info,
+                           interaction_stats=interaction_stats,
+                           interactions=get_interactions(user_id),
                            username=session.get("username"),
                            role=role)
 
@@ -3267,6 +3570,10 @@ def api_export_db():
 
 
 if __name__ == "__main__":
+    # Init DB here (not at module level) to avoid Flask debug reloader
+    # running it twice and causing SQLite lock contention
+    init_db_complete()
+
     print("=" * 60)
     print("Magic Bot AI - Complete Edition")
     print("=" * 60)

@@ -102,6 +102,61 @@
             </div>
         </div>
 
+        <!-- Free Trial Banner -->
+        {% if trial_info and not trial_info.get('admin') and not trial_info.expired %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm {% if trial_info.days_remaining <= 15 %}border-warning{% else %}border-info{% endif %}">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap">
+                            <div>
+                                <h5 class="card-title mb-2">
+                                    {% if trial_info.days_remaining <= 15 and trial_info.days_remaining > 0 %}
+                                        <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                                        <span class="text-warning">Free Trial Ending Soon!</span>
+                                    {% elif trial_info.days_remaining == 0 %}
+                                        <i class="bi bi-exclamation-triangle-fill text-danger"></i>
+                                        <span class="text-danger">Last Day of Free Trial!</span>
+                                    {% else %}
+                                        <i class="bi bi-gift-fill text-info"></i>
+                                        <span>Free Trial Active</span>
+                                    {% endif %}
+                                </h5>
+                                <p class="mb-1 text-muted">
+                                    You have <strong>{{ trial_info.days_remaining }}</strong> days remaining in your {{ trial_info.total_days }}-day free trial.
+                                    {% if trial_info.bonus_months > 0 %}
+                                        <span class="text-success">(+{{ trial_info.bonus_months }} free months from referrals)</span>
+                                    {% endif %}
+                                </p>
+                                <small class="text-muted">
+                                    Trial ends: {{ trial_info.trial_end[:10] }}
+                                </small>
+                            </div>
+                            <div class="mt-2 mt-md-0">
+                                {% if trial_info.expired %}
+                                    <span class="badge bg-danger">Expired</span>
+                                {% elif trial_info.days_remaining <= 15 %}
+                                    <span class="badge bg-warning text-dark">{{ trial_info.days_remaining }} days left</span>
+                                {% else %}
+                                    <span class="badge bg-info">{{ trial_info.days_remaining }} days left</span>
+                                {% endif %}
+                                <a href="/referrer" class="btn btn-sm btn-outline-success ms-2">
+                                    <i class="bi bi-people"></i> Refer &amp; Extend Trial
+                                </a>
+                            </div>
+                        </div>
+                        {% if trial_info.days_remaining <= 15 and trial_info.days_remaining > 0 %}
+                        <div class="progress mt-2" style="height: 6px;">
+                            {% set pct = (trial_info.days_remaining / trial_info.total_days * 100) | round(1) %}
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ pct }}%" aria-valuenow="{{ pct }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="row">
             <!-- Profile Form -->
             <div class="col-lg-8 mb-4">

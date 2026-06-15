@@ -69,8 +69,11 @@
         <a href="/features/qa" class="sidebar-item">
             <i class="bi bi-stars"></i> Q&A
         </a>
-        <a href="/referral-program" class="sidebar-item {% if active_page == 'referrer' %}active{% endif %}">
+        <a href="/referrer" class="sidebar-item {% if active_page == 'referrer' %}active{% endif %}">
             <i class="bi bi-gift"></i> Refer & Earn
+        </a>
+        <a href="/billing" class="sidebar-item {% if active_page == 'billing' %}active{% endif %}">
+            <i class="bi bi-credit-card"></i> Billing
         </a>
         <a href="/advertisement#contact" class="sidebar-item">
             <i class="bi bi-envelope"></i> Contact AI Team
@@ -89,6 +92,9 @@
         </a>
         <a href="/admin/contacts" class="sidebar-item {% if active_page == 'admin_contacts' %}active{% endif %}">
             <i class="bi bi-chat-dots"></i> Contacts
+        </a>
+        <a href="/admin/payments" class="sidebar-item {% if active_page == 'admin_payments' %}active{% endif %}">
+            <i class="bi bi-credit-card"></i> Payments
         </a>
     </div>
     {% endif %}

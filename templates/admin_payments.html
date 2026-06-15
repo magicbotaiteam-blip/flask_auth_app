@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}Review Payments{% endblock %}
+{% block content %}
+{% with active_page='admin_payments' %}
+{% include '_sidebar.html' %}
+<div class="sidebar-content">
+{% endwith %}
+
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <h2 class="mb-1"><i class="bi bi-credit-card"></i> Payment Submissions</h2>
+        <p class="lead mb-0">Review and approve manual payment submissions</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    {% if submissions %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>User</th>
+                    <th>Method</th>
+                    <th>Details</th>
+                    <th>Amount</th>
+                    <th>Receipt</th>
+                    <th>Notes</th>
+                    <th>Submitted</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sub in submissions %}
+                <tr>
+                    <td>#{{ sub.id }}</td>
+                    <td>
+                        <strong>{{ sub.username }}</strong><br>
+                        <small class="text-muted">{{ sub.email }}</small>
+                    </td>
+                    <td>
+                        <span class="badge bg-info">{{ sub.payment_method | title }}</span>
+                    </td>
+                    <td>
+                        {% set details = sub.method_details | fromjson if sub.method_details and sub.method_details.startswith('{') else {} %}
+                        {% if details %}
+                            {% if sub.payment_method == 'card' %}
+                                <small>Card ending in <strong>{{ details.get('card_last4', '????') }}</strong><br>
+                                Exp: {{ details.get('card_exp_month', '??') }}/{{ details.get('card_exp_year', '????') }}</small>
+                            {% elif sub.payment_method == 'paypal' %}
+                                <small>{{ details.get('paypal_email', '-') }}<br>
+                                TXN: {{ details.get('paypal_txn_id', '-') }}</small>
+                            {% elif sub.payment_method == 'crypto' %}
+                                <small>{{ details.get('crypto_network', '-') }}<br>
+                                {{ details.get('crypto_address', '-')[:20] }}...</small>
+                            {% elif sub.payment_method == 'other' %}
+                                <small>{{ details.get('other_method', '-') }}</small>
+                            {% endif %}
+                        {% else %}
+                            <small class="text-muted">No details</small>
+                        {% endif %}
+                    </td>
+                    <td>${{ '%.2f' | format(sub.amount) }}</td>
+                    <td>
+                        {% if sub.receipt_url %}
+                            <a href="{{ url_for('static', filename='uploads/payment_submissions/' ~ sub.user_id ~ '/' ~ sub.receipt_url.split('/')[-1]) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        {% else %}
+                            <span class="text-muted">None</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if sub.notes %}
+                            <small>{{ sub.notes[:50] }}{% if sub.notes|length > 50 %}...{% endif %}</small>
+                        {% else %}
+                            <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td><small>{{ sub.created_at[:16] }}</small></td>
+                    <td>
+                        <div class="d-flex gap-1">
+                            <form method="POST" action="{{ url_for('api_approve_payment', submission_id=sub.id) }}" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-success" onclick="return confirm('Activate subscription for {{ sub.username }}?')">
+                                    <i class="bi bi-check-lg"></i> Approve
+                                </button>
+                            </form>
+                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#rejectModal{{ sub.id }}">
+                                <i class="bi bi-x-lg"></i> Reject
+                            </button>
+                        </div>
+
+                        <!-- Reject Modal -->
+                        <div class="modal fade" id="rejectModal{{ sub.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title">Reject Payment #{{ sub.id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('api_reject_payment', submission_id=sub.id) }}">
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label class="form-label">Reason (optional)</label>
+                                                <textarea class="form-control" name="reason" rows="3" placeholder="Why is this being rejected?"></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-danger">Reject</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body text-center py-5">
+            <div class="display-5 mb-3" style="color: var(--primary-color, #7c3aed);">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h4>No Pending Submissions</h4>
+            <p class="text-muted mb-0">All payment submissions have been reviewed.</p>
+        </div>
+    </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}

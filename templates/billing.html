@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% block title %}Billing & Subscription{% endblock %}
+{% block content %}
+{% with active_page='billing' %}
+{% include '_sidebar.html' %}
+<div class="sidebar-content">
+{% endwith %}
+
+<div class="container py-4">
+    <div class="page-header mb-4">
+        <h2 class="mb-1"><i class="bi bi-credit-card"></i> Billing & Subscription</h2>
+        <p class="lead mb-0">Manage your plan, payments, and billing information</p>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Current Plan Card -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center justify-content-between flex-wrap">
+                        <div>
+                            <h4 class="mb-1">Current Plan</h4>
+                            {% if billing.status == 'active' %}
+                                <span class="badge bg-success fs-6 mb-2">Active</span>
+                                <p class="mb-1"><strong>Plan:</strong> {{ billing.plan | replace('_', ' ') | title }}</p>
+                                <p class="mb-0 text-muted">Your subscription is active.</p>
+                            {% elif billing.status == 'trial' %}
+                                <span class="badge bg-info fs-6 mb-2">Free Trial</span>
+                                <p class="mb-1">
+                                    {% if billing.trial_days_remaining > 0 %}
+                                        <strong>{{ billing.trial_days_remaining }} days remaining</strong> in your free trial
+                                    {% else %}
+                                        <strong class="text-danger">Last day of free trial!</strong>
+                                    {% endif %}
+                                </p>
+                                <p class="mb-0 text-muted">After the trial, subscribe for $5/month to continue.</p>
+                            {% elif billing.status == 'expired' %}
+                                <span class="badge bg-danger fs-6 mb-2">Expired</span>
+                                <p class="mb-1">Your free trial has ended.</p>
+                                <p class="mb-0 text-muted">Submit payment below to restore access.</p>
+                            {% elif billing.status == 'canceled' %}
+                                <span class="badge bg-warning fs-6 mb-2">Canceled</span>
+                                <p class="mb-1">Your subscription has been canceled.</p>
+                                <p class="mb-0 text-muted">You can resubscribe at any time.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pricing Options -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <h4 class="mb-3">Available Plans</h4>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-5 mb-3" style="color: var(--primary-color, #7c3aed);">
+                        <i class="bi bi-gift"></i>
+                    </div>
+                    <h4>Free Trial</h4>
+                    <div class="fs-1 fw-bold mb-2">$0</div>
+                    <p class="text-muted">30 days free</p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Full platform access</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Up to 3 bots</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Basic AI models</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>24/7 support</li>
+                    </ul>
+                    {% if billing.status == 'trial' %}
+                        <span class="badge bg-info">Current</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100 border-2" style="border-color: var(--primary-color, #7c3aed) !important;">
+                <div class="card-body text-center p-4">
+                    <span class="badge bg-primary mb-2">Most Popular</span>
+                    <div class="display-5 mb-3" style="color: var(--primary-color, #7c3aed);">
+                        <i class="bi bi-stars"></i>
+                    </div>
+                    <h4>Basic Plan</h4>
+                    <div class="fs-1 fw-bold mb-2">$5</div>
+                    <p class="text-muted">per month</p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Everything in Free Trial</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Unlimited bots</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Premium AI models</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Priority support</li>
+                    </ul>
+                    {% if billing.status == 'active' %}
+                        <span class="badge bg-success">Current</span>
+                    {% elif billing.status == 'expired' or billing.status == 'trial' or billing.status == 'canceled' %}
+                        <a href="#payment-method" class="btn btn-primary w-100">Subscribe</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center p-4">
+                    <div class="display-5 mb-3" style="color: var(--primary-color, #7c3aed);">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <h4>Enterprise</h4>
+                    <div class="fs-1 fw-bold mb-2">Custom</div>
+                    <p class="text-muted">tailored pricing</p>
+                    <ul class="list-unstyled mb-4">
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Everything in Basic</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Custom pricing</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>Dedicated manager</li>
+                        <li class="mb-2"><i class="bi bi-check-circle text-success me-2"></i>SLA guarantee</li>
+                    </ul>
+                    <a href="#payment-method" class="btn btn-outline-primary w-100">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment Method Form -->
+    <div id="payment-method" class="row mb-4">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-wallet2"></i> Submit Payment Method</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Choose your payment method below. Once submitted, our team will review and activate your subscription.</p>
+
+                    <!-- Payment Method Tabs -->
+                    <ul class="nav nav-pills mb-4" id="paymentTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="card-tab" data-bs-toggle="pill" data-bs-target="#card-panel" type="button" role="tab">
+                                <i class="bi bi-credit-card"></i> Credit/Debit Card
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="paypal-tab" data-bs-toggle="pill" data-bs-target="#paypal-panel" type="button" role="tab">
+                                <i class="bi bi-paypal"></i> PayPal
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="crypto-tab" data-bs-toggle="pill" data-bs-target="#crypto-panel" type="button" role="tab">
+                                <i class="bi bi-currency-bitcoin"></i> Crypto / USDT
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="other-tab" data-bs-toggle="pill" data-bs-target="#other-panel" type="button" role="tab">
+                                <i class="bi bi-three-dots"></i> Other
+                            </button>
+                        </li>
+                    </ul>
+
+                    <form id="paymentForm" method="POST" action="{{ url_for('submit_payment') }}" enctype="multipart/form-data">
+
+                        <!-- Card -->
+                        <div class="tab-content" id="paymentTabsContent">
+                            <div class="tab-pane fade show active" id="card-panel" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label">Cardholder Name</label>
+                                    <input type="text" class="form-control" name="card_holder" placeholder="John Doe">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Card Number</label>
+                                    <input type="text" class="form-control" name="card_number" placeholder="1234 5678 9012 3456" maxlength="19">
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Expiry Month</label>
+                                        <input type="text" class="form-control" name="card_exp_month" placeholder="MM" maxlength="2">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">Expiry Year</label>
+                                        <input type="text" class="form-control" name="card_exp_year" placeholder="YYYY" maxlength="4">
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label class="form-label">CVV</label>
+                                        <input type="text" class="form-control" name="card_cvv" placeholder="***" maxlength="4">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- PayPal -->
+                            <div class="tab-pane fade" id="paypal-panel" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label">PayPal Email</label>
+                                    <input type="email" class="form-control" name="paypal_email" placeholder="your@email.com">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">PayPal Transaction ID (if already sent)</label>
+                                    <input type="text" class="form-control" name="paypal_txn_id" placeholder="Optional">
+                                </div>
+                            </div>
+
+                            <!-- Crypto -->
+                            <div class="tab-pane fade" id="crypto-panel" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label">Crypto / USDT Address</label>
+                                    <input type="text" class="form-control" name="crypto_address" placeholder="Your wallet address (where you'll send from)">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Network</label>
+                                    <select class="form-select" name="crypto_network">
+                                        <option value="">Select network...</option>
+                                        <option value="ERC20">Ethereum (ERC20)</option>
+                                        <option value="BEP20">BNB Smart Chain (BEP20)</option>
+                                        <option value="TRC20">Tron (TRC20)</option>
+                                        <option value="SOL">Solana</option>
+                                        <option value="BTC">Bitcoin</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Transaction Hash (if already sent)</label>
+                                    <input type="text" class="form-control" name="crypto_tx_hash" placeholder="Optional">
+                                </div>
+                            </div>
+
+                            <!-- Other -->
+                            <div class="tab-pane fade" id="other-panel" role="tabpanel">
+                                <div class="mb-3">
+                                    <label class="form-label">Payment Method</label>
+                                    <input type="text" class="form-control" name="other_method" placeholder="e.g. Bank Transfer, Venmo, CashApp, etc.">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Details / Notes</label>
+                                    <textarea class="form-control" name="other_notes" rows="3" placeholder="Describe your payment method and any reference info"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Common Fields -->
+                        <hr>
+                        <div class="mb-3">
+                            <label class="form-label">Upload Payment Receipt / Screenshot (optional)</label>
+                            <input type="file" class="form-control" name="receipt" accept="image/*,.pdf">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Notes for the team (optional)</label>
+                            <textarea class="form-control" name="notes" rows="2" placeholder="Anything else?"></textarea>
+                        </div>
+
+                        <input type="hidden" name="payment_method" id="paymentMethod" value="card">
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-send-check"></i> Submit Payment Method
+                            </button>
+                        </div>
+                        <p class="text-muted small mt-2 mb-0">
+                            <i class="bi bi-shield-check"></i> Your payment info is stored securely and reviewed by our team within 24 hours.
+                        </p>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment History -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-bottom">
+                    <h5 class="mb-0"><i class="bi bi-clock-history"></i> Payment History</h5>
+                </div>
+                <div class="card-body">
+                    {% if billing.payments and billing.payments|length > 0 %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Description</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for payment in billing.payments %}
+                                <tr>
+                                    <td>{{ payment.created_at[:10] if payment.created_at else 'N/A' }}</td>
+                                    <td>
+                                        {% if payment.currency == 'usd' %}
+                                            ${{ '%0.2f' | format(payment.amount / 100) }}
+                                        {% else %}
+                                            {{ payment.amount }} {{ payment.currency | upper }}
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if payment.status == 'completed' %}
+                                            <span class="badge bg-success">Completed</span>
+                                        {% elif payment.status == 'pending' %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% elif payment.status == 'verified' %}
+                                            <span class="badge bg-info">In Review</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">{{ payment.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ payment.description or '-' }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">No payment history yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script>
+// Track which payment tab is active
+document.querySelectorAll('#paymentTabs button').forEach(tab => {
+    tab.addEventListener('shown.bs.tab', function (e) {
+        document.getElementById('paymentMethod').value = e.target.id.replace('-tab', '');
+    });
+});
+</script>
+{% endblock %}
