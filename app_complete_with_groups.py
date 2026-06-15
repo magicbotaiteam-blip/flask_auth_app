@@ -4,6 +4,7 @@ With Telegram Bot API + Group Collaboration UI
 """
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify, send_file, send_from_directory
+from logging.handlers import RotatingFileHandler
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
 from pathlib import Path
@@ -31,6 +32,15 @@ from payment import (
     submit_payment_method, get_pending_submissions, approve_submission, reject_submission,
     HAS_STRIPE, STRIPE_PUBLISHABLE_KEY
 )
+
+# Audit logging system
+from audit import (
+    init_audit_tables, log_action, get_audit_logs, get_audit_stats,
+    INFO, WARNING, ERROR, SECURITY
+)
+
+# Logging utilities
+from log_util import configure_app_logging, get_logger
 
 # S3 storage (optional, for production)
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
@@ -88,6 +98,11 @@ if 'OAUTHLIB_INSECURE_TRANSPORT' not in os.environ:
 
 app = Flask(__name__)
 app.secret_key = "6ce26db79ba4b1ae2613a1dc4fa4177a75847d40f32347ac9388377a5a7b587b"
+
+# Initialize file logging (rotating 10MB x 10 backups)
+configure_app_logging()
+app_logger = get_logger("app")
+app_logger.info("Application logging initialized")
 
 # Force HTTPS for redirect URIs (AWS ALB terminates SSL, so Flask sees HTTP)
 # ProxyFix would be ideal but requires X-Forwarded-Proto, which Express Mode may not send
@@ -360,6 +375,9 @@ def init_db_complete():
 
     # Payment & billing tables
     init_payment_tables()
+
+    # Audit logging tables
+    init_audit_tables()
 
     conn.commit()
     conn.close()
@@ -1135,12 +1153,30 @@ def signin_local():
             ).fetchone()
 
         if not user:
+            # Audit: failed login (no such user)
+            log_action(
+                user_id=None, username=username,
+                action="user.login_failed", category="auth",
+                severity=SECURITY,
+                details=f"Failed login attempt - user not found",
+                ip_address=request.remote_addr,
+                user_agent=request.user_agent.string if request.user_agent else None,
+            )
             conn.close()
             flash("Invalid username/email or password.", "error")
             return render_template("signin_local.html", google=HAS_GOOGLE_OAUTH)
 
         # Check password
         if not check_password_hash(user["password_hash"], password):
+            # Audit: failed login (wrong password)
+            log_action(
+                user_id=user["id"], username=username,
+                action="user.login_failed", category="auth",
+                severity=SECURITY,
+                details=f"Failed login attempt - wrong password",
+                ip_address=request.remote_addr,
+                user_agent=request.user_agent.string if request.user_agent else None,
+            )
             conn.close()
             flash("Invalid username/email or password.", "error")
             return render_template("signin_local.html", google=HAS_GOOGLE_OAUTH)
@@ -1156,6 +1192,15 @@ def signin_local():
         session["provider"] = "local"
         session["role"] = role_row["name"] if role_row else "customer"
         conn.close()
+
+        # Audit: user login
+        log_action(
+            user_id=user["id"], username=user["username"],
+            action="user.login", category="auth",
+            details="Local user login",
+            ip_address=request.remote_addr,
+            user_agent=request.user_agent.string if request.user_agent else None,
+        )
 
         return redirect(url_for("index"))
 
@@ -1348,6 +1393,15 @@ def signup_local():
                 flash(f"Account created successfully! You have been added to '{group_name}'.", "success")
                 return redirect(url_for("group_dashboard", group_id=group_id))
             else:
+                # Audit: new user signup
+                log_action(
+                    user_id=user["id"], username=user["username"],
+                    action="user.signup", category="auth",
+                    severity=SECURITY,
+                    details=f"New local signup (email: {email})",
+                    ip_address=request.remote_addr,
+                    user_agent=request.user_agent.string if request.user_agent else None,
+                )
                 flash("Account created successfully! Welcome to Magic Bot AI.", "success")
                 return redirect(url_for("profile"))
 
@@ -1398,6 +1452,14 @@ def logout():
         except:
             pass
 
+    # Audit: user logout
+    log_action(
+        user_id=session.get("user_id"), username=session.get("username"),
+        action="user.logout", category="auth",
+        details="User logged out",
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string if request.user_agent else None,
+    )
     session.clear()
     return redirect(url_for("landing"))
 
@@ -1530,6 +1592,13 @@ def billing():
     user_id = session["user_id"]
     billing_info = get_billing_info(user_id)
     role = session.get("role", "customer")
+    meta = _audit_request_meta()
+    log_action(
+        user_id=meta["user_id"], username=meta["username"],
+        action="billing.view", category="billing",
+        details="Viewed billing page",
+        ip_address=meta["ip_address"], user_agent=meta["user_agent"],
+    )
     return render_template("billing.html",
                          billing=billing_info,
                          has_stripe=HAS_STRIPE,
@@ -1559,7 +1628,16 @@ def api_cancel_subscription():
     """Cancel subscription."""
     user_id = session["user_id"]
     success = cancel_subscription(user_id)
+
+    meta = _audit_request_meta()
     if success:
+        log_action(
+            user_id=user_id, username=meta["username"],
+            action="subscription.canceled", category="subscription",
+            severity=WARNING,
+            details="Canceled subscription",
+            ip_address=meta["ip_address"], user_agent=meta["user_agent"],
+        )
         flash("Subscription canceled. You will continue to have access until the end of your billing period.", "info")
     else:
         flash("No active subscription to cancel.", "warning")
@@ -1612,9 +1690,22 @@ def submit_payment():
 
     success = submit_payment_method(user_id, data, receipt_path)
 
+    meta = _audit_request_meta()
     if success:
+        log_action(
+            user_id=user_id, username=meta["username"],
+            action="payment.submitted", category="payment",
+            details=f"Submitted {data.get('payment_method', '?')} payment method",
+            ip_address=meta["ip_address"], user_agent=meta["user_agent"],
+        )
         flash("Payment method submitted! Our team will review and activate your subscription within 24 hours.", "success")
     else:
+        log_action(
+            user_id=user_id, username=meta["username"],
+            action="payment.submit_error", category="payment", severity=ERROR,
+            details="Error submitting payment method",
+            ip_address=meta["ip_address"], user_agent=meta["user_agent"],
+        )
         flash("There was an error submitting your payment. Please try again or contact support.", "danger")
 
     return redirect(url_for("billing") + "#payment-method")
@@ -1648,9 +1739,24 @@ def api_approve_payment(submission_id):
         return jsonify({"error": "Unauthorized"}), 403
 
     success = approve_submission(submission_id, session["user_id"])
+
+    meta = _audit_request_meta()
     if success:
+        log_action(
+            user_id=meta["user_id"], username=meta["username"],
+            action="payment.approved", category="payment",
+            severity=SECURITY,
+            details=f"Approved payment submission #{submission_id}",
+            ip_address=meta["ip_address"], user_agent=meta["user_agent"],
+        )
         flash("Payment approved and subscription activated.", "success")
     else:
+        log_action(
+            user_id=meta["user_id"], username=meta["username"],
+            action="payment.approve_error", category="payment", severity=ERROR,
+            details=f"Error approving payment submission #{submission_id}",
+            ip_address=meta["ip_address"], user_agent=meta["user_agent"],
+        )
         flash("Error approving payment.", "danger")
     return redirect(url_for("admin_payments"))
 
@@ -1668,7 +1774,70 @@ def api_reject_payment(submission_id):
         flash("Payment rejected.", "info")
     else:
         flash("Error rejecting payment.", "danger")
+    # Audit: admin rejected payment
+    log_action(
+        user_id=session.get("user_id"),
+        username=session.get("username"),
+        action="payment.rejected",
+        category="payment",
+        severity=WARNING,
+        details=f"Rejected payment submission #{submission_id}" + (f" - {reason}" if reason else ""),
+        ip_address=request.remote_addr,
+        user_agent=request.user_agent.string if request.user_agent else None,
+    )
     return redirect(url_for("admin_payments"))
+
+
+# ==================== Audit Logging ====================
+
+
+def _audit_request_meta():
+    """Extract common request metadata for audit logging."""
+    return {
+        "ip_address": request.remote_addr,
+        "user_agent": request.user_agent.string if request.user_agent else None,
+        "user_id": session.get("user_id"),
+        "username": session.get("username"),
+    }
+
+
+@app.route("/admin/audit")
+@login_required
+def admin_audit():
+    """Admin audit log viewer."""
+    role = session.get("role", "customer")
+    if role != "admin":
+        flash("Admin access required.", "danger")
+        return redirect(url_for("index"))
+
+    page = request.args.get("page", 1, type=int)
+    per_page = 50
+    offset = (page - 1) * per_page
+    category = request.args.get("category", "")
+    severity = request.args.get("severity", "")
+    search = request.args.get("search", "")
+
+    logs = get_audit_logs(
+        limit=per_page,
+        offset=offset,
+        category=category or None,
+        severity=severity or None,
+        search=search or None,
+    )
+    stats = get_audit_stats()
+
+    return render_template(
+        "admin_audit.html",
+        logs=logs,
+        stats=stats,
+        page=page,
+        per_page=per_page,
+        category=category,
+        severity=severity,
+        search=search,
+        username=session.get("username"),
+        role=role,
+    )
 
 
 # ==================== Template Filters ====================
@@ -3567,6 +3736,25 @@ def api_export_db():
 
 
 # ==================== Run Application ====================
+
+
+# HTTP access log
+import logging as _logging
+_access_logger = _logging.getLogger("access")
+
+
+@app.after_request
+def _log_access(response):
+    """Log all HTTP requests to the access log."""
+    if hasattr(request, "method") and hasattr(request, "path"):
+        _access_logger.info(
+            '%s %s %s %s',
+            request.remote_addr or "-",
+            request.method,
+            request.full_path if hasattr(request, "full_path") else request.path,
+            response.status_code,
+        )
+    return response
 
 
 if __name__ == "__main__":

@@ -13,9 +13,9 @@ import os
 import logging
 from typing import Optional, Dict, Any
 from db import get_conn, is_postgres
+from log_util import get_logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger("app")
 
 # Stripe keys (optional — system degrades gracefully without them)
 STRIPE_SECRET_KEY = os.environ.get("STRIPE_SECRET_KEY", "")

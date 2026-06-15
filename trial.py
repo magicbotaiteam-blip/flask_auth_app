@@ -11,10 +11,9 @@ Rules:
 from datetime import datetime, timedelta, date
 from typing import Optional, Dict, Any
 from db import get_conn, is_postgres
-import logging
+from log_util import get_logger
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = get_logger("app")
 
 TRIAL_DAYS = 30
 

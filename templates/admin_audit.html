@@ -1,0 +1,217 @@
+{% extends "base.html" %}
+{% block title %}Audit Logs{% endblock %}
+{% block content %}
+{% with active_page='admin_audit' %}
+{% include '_sidebar.html' %}
+<div class="sidebar-content">
+{% endwith %}
+
+<div class="container py-4">
+    <div class="page-header mb-4 d-flex align-items-center justify-content-between flex-wrap">
+        <div>
+            <h2 class="mb-1"><i class="bi bi-journal-text"></i> Audit Logs</h2>
+            <p class="lead mb-0">Track all important actions in the system</p>
+        </div>
+        <span class="badge bg-secondary fs-6">{{ stats.total }} total entries</span>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Stats Cards -->
+    <div class="row mb-4 g-3">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="fs-2 mb-1" style="color: var(--primary-color, #7c3aed);">
+                        <i class="bi bi-grid-3x3-gap"></i>
+                    </div>
+                    <h6 class="text-muted mb-2">Categories</h6>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        {% for cat in stats.by_category %}
+                        <a href="?category={{ cat.category }}" class="badge bg-light text-dark text-decoration-none px-3 py-2">
+                            {{ cat.category }} <strong>{{ cat.cnt }}</strong>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="fs-2 mb-1 text-{{ 'success' if stats.by_severity|selectattr('severity', 'equalto', 'info')|map(attribute='cnt')|sum > 0 else 'muted' }}">
+                        <i class="bi bi-shield-exclamation"></i>
+                    </div>
+                    <h6 class="text-muted mb-2">Severity</h6>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        {% for sev in stats.by_severity %}
+                        <span class="badge bg-{{ 'danger' if sev.severity == 'security' else 'warning' if sev.severity == 'warning' else 'danger' if sev.severity == 'error' else 'info' }} px-3 py-2">
+                            {{ sev.severity }} <strong>{{ sev.cnt }}</strong>
+                        </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body text-center">
+                    <div class="fs-2 mb-1" style="color: var(--primary-color, #7c3aed);">
+                        <i class="bi bi-lightning"></i>
+                    </div>
+                    <h6 class="text-muted mb-2">Recent Actions (7 days)</h6>
+                    <div class="small">
+                        {% for act in stats.recent_actions %}
+                        <div class="d-flex justify-content-between">
+                            <span class="text-truncate me-2" style="max-width: 180px;">{{ act.action }}</span>
+                            <strong>{{ act.cnt }}</strong>
+                        </div>
+                        {% endfor %}
+                        {% if not stats.recent_actions %}
+                        <span class="text-muted">No actions in the last 7 days</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-2 align-items-end">
+                <div class="col-md-3">
+                    <label class="form-label small">Category</label>
+                    <select name="category" class="form-select form-select-sm">
+                        <option value="">All Categories</option>
+                        {% for cat in stats.by_category %}
+                        <option value="{{ cat.category }}" {% if category == cat.category %}selected{% endif %}>{{ cat.category | title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Severity</label>
+                    <select name="severity" class="form-select form-select-sm">
+                        <option value="">All Severity</option>
+                        <option value="info" {% if severity == 'info' %}selected{% endif %}>Info</option>
+                        <option value="warning" {% if severity == 'warning' %}selected{% endif %}>Warning</option>
+                        <option value="error" {% if severity == 'error' %}selected{% endif %}>Error</option>
+                        <option value="security" {% if severity == 'security' %}selected{% endif %}>Security</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">Search</label>
+                    <input type="text" name="search" class="form-control form-control-sm" placeholder="Search action, user, or details..." value="{{ search }}">
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-primary btn-sm w-100"><i class="bi bi-filter"></i> Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Entries -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-0">
+            {% if logs %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Time</th>
+                            <th>User</th>
+                            <th>Action</th>
+                            <th>Category</th>
+                            <th>Severity</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for log in logs %}
+                        <tr>
+                            <td class="small text-nowrap" title="{{ log.created_at }}">
+                                {% if log.created_at and log.created_at|length >= 16 %}
+                                    {{ log.created_at[:16] }}
+                                {% else %}
+                                    {{ log.created_at or '-' }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if log.username %}
+                                    <strong>{{ log.username }}</strong>
+                                    <small class="text-muted d-block">#{{ log.user_id }}</small>
+                                {% else %}
+                                    <span class="text-muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <code class="small">{{ log.action }}</code>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ log.category }}</span>
+                            </td>
+                            <td>
+                                {% if log.severity == 'security' %}
+                                    <span class="badge bg-danger">Security</span>
+                                {% elif log.severity == 'error' %}
+                                    <span class="badge bg-danger">Error</span>
+                                {% elif log.severity == 'warning' %}
+                                    <span class="badge bg-warning text-dark">Warning</span>
+                                {% else %}
+                                    <span class="badge bg-info">Info</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ log.details or '-' }}</small>
+                                {% if log.old_value and log.new_value %}
+                                <div class="small text-muted mt-1">
+                                    <del class="text-danger">{{ log.old_value[:60] }}</del>
+                                    <i class="bi bi-arrow-right mx-1"></i>
+                                    <ins class="text-success">{{ log.new_value[:60] }}</ins>
+                                </div>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-5">
+                <div class="display-5 mb-3" style="color: var(--primary-color, #7c3aed);">
+                    <i class="bi bi-journal-x"></i>
+                </div>
+                <h4>No Audit Logs Found</h4>
+                <p class="text-muted">Try adjusting your filters or check back after some actions have been recorded.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if logs|length >= per_page %}
+    <div class="text-center mt-4">
+        <nav>
+            <ul class="pagination justify-content-center">
+                <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page - 1 }}&category={{ category }}&severity={{ severity }}&search={{ search }}">Previous</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page + 1 }}&category={{ category }}&severity={{ severity }}&search={{ search }}">Next</a>
+                </li>
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
+</div>
+</div>
+{% endblock %}
