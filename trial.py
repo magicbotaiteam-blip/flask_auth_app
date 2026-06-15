@@ -254,12 +254,24 @@ def get_interaction_stats(user_id: int) -> Dict[str, int]:
     """Get interaction stats per user. Admins get zeros."""
     conn = get_conn()
     try:
-        user = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
-        if user and user["role"] == "admin":
-            conn.close()
-            return {"total": 0, "pending": 0, "signed_up": 0, "expired": 0}
+        # Check if admin via roles/user_roles join (works with both app schema and direct role column)
+        from db import is_postgres as _is_pg
+        if _is_pg():
+            user_role = conn.execute(
+                """SELECT r.name FROM roles r
+                   JOIN user_roles ur ON r.id = ur.role_id
+                   WHERE ur.user_id = ?""",
+                (user_id,)
+            ).fetchone()
+        else:
+            user_role = conn.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+        if user_role:
+            role_val = user_role[0]
+            if role_val == "admin":
+                conn.close()
+                return {"total": 0, "pending": 0, "signed_up": 0, "expired": 0}
     except Exception:
-        pass
+        conn.rollback()
     stats = conn.execute("""
         SELECT
             COUNT(*) as total,

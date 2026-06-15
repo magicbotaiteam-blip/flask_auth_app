@@ -99,7 +99,12 @@ class _PgConnection:
             raw_conn = self._session.connection().connection
             raw_cursor = raw_conn.cursor()
             raw_sql = sql.replace('?', '%s')
-            raw_cursor.execute(raw_sql, params if params else [])
+            try:
+                raw_cursor.execute(raw_sql, params if params else [])
+            except Exception:
+                # Rollback the raw connection to clear aborted transaction state
+                raw_conn.rollback()
+                raise
             cursor_obj = _PgCursor(raw_cursor)
             # Populate lastrowid for INSERT statements (sqlite3 compatibility)
             if raw_sql.strip().upper().startswith("INSERT"):
@@ -114,7 +119,11 @@ class _PgConnection:
             return cursor_obj
         else:
             stmt = text(sql) if isinstance(sql, str) else sql
-            result = self._session.execute(stmt, params)
+            try:
+                result = self._session.execute(stmt, params)
+            except Exception:
+                self._session.rollback()
+                raise
             cursor_obj = _PgCursor(result)
             # SQLAlchemy text() path: populate lastrowid for INSERT
             if isinstance(sql, str) and sql.strip().upper().startswith("INSERT"):
@@ -138,8 +147,12 @@ class _PgConnection:
         raw_sql = str(stmt)
         # Convert ? to %s for psycopg2
         raw_sql = raw_sql.replace('?', '%s')
-        for params in seq_of_params:
-            raw_cursor.execute(raw_sql, params)
+        try:
+            for params in seq_of_params:
+                raw_cursor.execute(raw_sql, params)
+        except Exception:
+            raw_conn.rollback()
+            raise
 
     def commit(self):
         self._session.commit()
