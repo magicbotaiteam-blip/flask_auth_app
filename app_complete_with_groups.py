@@ -46,10 +46,18 @@ from log_util import configure_app_logging, get_logger
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
 S3_ENABLED = bool(os.environ.get("S3_BUCKET_NAME")) or os.path.exists("/.dockerenv")
 
-# Only enable S3 if credentials are available (env vars or IAM role)
-has_creds = bool(os.environ.get("AWS_ACCESS_KEY_ID")) or bool(os.environ.get("AWS_SECRET_ACCESS_KEY"))
-if has_creds or not os.path.exists("/.dockerenv"):
-    S3_ENABLED = S3_ENABLED and has_creds
+# Check if credentials are available (env vars or IAM role on ECS)
+has_env_creds = bool(os.environ.get("AWS_ACCESS_KEY_ID")) and bool(os.environ.get("AWS_SECRET_ACCESS_KEY"))
+is_docker = os.path.exists("/.dockerenv")
+
+# On ECS (Docker), boto3 uses IAM role — no env vars needed
+# On local dev, we need explicit env vars
+if is_docker:
+    # In Docker: assume credentials come from IAM role or ECS task role
+    S3_ENABLED = S3_ENABLED
+else:
+    # Local dev: only enable if explicit AWS env vars are provided
+    S3_ENABLED = S3_ENABLED and has_env_creds
 
 s3_client = None
 if S3_ENABLED:
