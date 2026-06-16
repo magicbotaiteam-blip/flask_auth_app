@@ -2552,7 +2552,7 @@ def bot_files(bot_id):
                         "s3_key": key
                     })
             except Exception as e:
-                print(f"Error listing S3 objects: {e}")
+                app_logger.error(f"[S3] Error listing objects at prefix '{prefix}/': {e}")
         elif os.path.exists(file_folder):
             for f in sorted(os.listdir(file_folder)):
                 full_path = os.path.join(file_folder, f)
