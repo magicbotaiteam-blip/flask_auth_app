@@ -77,12 +77,12 @@
                         <div class="popular-badge">MOST POPULAR</div>
                         <h3 class="fw-bold">Basic Plan</h3>
                         <p class="text-muted">For growing businesses</p>
-                        <div class="price-amount">$5 per month<span style="font-size: 24px;">*</span></div>
+                        <div class="price-amount">$3 per month<span style="font-size: 24px;">*</span></div>
                         <a href="/signup_local" class="btn btn-primary w-100 mb-4">Get Started</a>
                         
                         <ul class="feature-list">
                             <li><i class="bi bi-check-circle"></i> <strong>Everything in Free Trial</strong></li>
-                            <li><i class="bi bi-check-circle"></i> Base fee: $5/month</li>
+                            <li><i class="bi bi-check-circle"></i> Base fee: $3/month</li>
                             <li><i class="bi bi-check-circle"></i> Create unlimited bots</li>
                             <li><i class="bi bi-check-circle"></i> 24/7 support</li>
                         </ul>
@@ -133,7 +133,7 @@
                     <div class="highlight-box">
                         <h4><i class="bi bi-calendar-check"></i> 1. First Month Free</h4>
                         <p>Start with a full-featured free trial. No credit card required. Experience everything OpenClaw AI has to offer for 30 days.</p>
-                        <p>Earn a bonus month for every 3 successful customer introduction</p>
+                        <p>Earn a bonus month for every successful customer introduction</p>
                         <ul class="feature-list">
                             <li><i class="bi bi-check-circle"></i> Full platform access</li>
                             <li><i class="bi bi-check-circle"></i> Create and test bots</li>
@@ -146,10 +146,10 @@
                 <div class="col-lg-6">
                     <div class="highlight-box">
                         <h4><i class="bi bi-currency-dollar"></i> 2. Flexible Monthly Pricing</h4>
-                        <p>After your free trial, pay a base fee of $5 per month. Additional charges apply only for what you actually use.</p>
+                        <p>After your free trial, pay a base fee of $3 per month. Additional charges apply only for what you actually use.</p>
                         <div class="timeline mt-3">
                             <div class="timeline-item">
-                                <h6>Base Monthly Fee: $5</h6>
+                                <h6>Base Monthly Fee: $3</h6>
                                 <p class="small">Covers platform access, basic features, and standard support</p>
                             </div>
                         </div>
@@ -206,11 +206,11 @@
                     
                     <div class="faq-item">
                         <div class="faq-question" data-bs-toggle="collapse" data-bs-target="#faq2">
-                            <span>What does the $5 monthly base fee include?</span>
+                            <span>What does the $3 monthly base fee include?</span>
                             <i class="bi bi-chevron-down"></i>
                         </div>
                         <div class="faq-answer collapse" id="faq2">
-                            <p>The $5 base monthly fee includes:</p>
+                            <p>The $3 base monthly fee includes:</p>
                             <ul>
                                 <li>Platform access and basic features</li>
                                 <li>Standard AI models</li>
@@ -335,12 +335,13 @@
             
             // Calculate usage cost
             const usageCost = messages * modelPrice;
-            const baseFee = 5;
+            const baseFee = 3;
             const total = baseFee + usageCost;
             
             // Update display
             messageValue.textContent = messages.toLocaleString();
-            costBreakdown.innerHTML = `Base fee: $${baseFee} + Usage: $${usageCost.toFixed(2)} = <strong>$${total.toFixed(2)} total</strong>`;
+            const baseFeeTotal = baseFee;
+            costBreakdown.innerHTML = `Base fee: $${baseFeeTotal} + Usage: $${usageCost.toFixed(2)} = <strong>$${total.toFixed(2)} total</strong>`;
             totalCost.textContent = `$${total.toFixed(2)}`;
         }
         

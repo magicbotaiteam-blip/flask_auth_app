@@ -3,7 +3,7 @@ Payment & Billing System for Magic Bot AI
 Uses Stripe Checkout for payment processing.
 Supports monthly subscriptions with async usage-based billing.
 
-Free Trial → $5/month base subscription → Enterprise (custom)
+Free Trial → $3/month base subscription → Enterprise (custom)
 
 Fully optional — if STRIPE_SECRET_KEY is not set, the system shows
 a "Contact Sales" fallback instead.
@@ -117,7 +117,7 @@ def init_payment_tables():
                 method_details TEXT,
                 receipt_url TEXT,
                 notes TEXT,
-                amount REAL DEFAULT 5.0,
+                amount REAL DEFAULT 3.0,
                 currency TEXT DEFAULT 'USD',
                 plan TEXT DEFAULT 'basic_monthly',
                 status TEXT NOT NULL DEFAULT 'pending',
@@ -136,7 +136,7 @@ def init_payment_tables():
                 method_details TEXT,
                 receipt_url TEXT,
                 notes TEXT,
-                amount REAL DEFAULT 5.0,
+                amount REAL DEFAULT 3.0,
                 currency TEXT DEFAULT 'USD',
                 plan TEXT DEFAULT 'basic_monthly',
                 status TEXT NOT NULL DEFAULT 'pending',
@@ -419,7 +419,7 @@ def submit_payment_method(user_id: int, data: Dict[str, Any], receipt_path: Opti
             """INSERT INTO payment_submissions
                (user_id, payment_method, method_details, receipt_url, notes, amount, currency, status)
                VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')""",
-            (user_id, payment_method, details_json, profile_url, notes, 5.0, "USD")
+            (user_id, payment_method, details_json, profile_url, notes, 3.0, "USD")
         )
 
         # Also log in payments table
@@ -428,13 +428,13 @@ def submit_payment_method(user_id: int, data: Dict[str, Any], receipt_path: Opti
             conn.execute(
                 """INSERT INTO payments (user_id, amount, currency, status, description)
                    VALUES (?, ?, ?, 'pending', ?)""",
-                (user_id, 500, "usd", f"Manual {payment_method} payment submitted")
+                (user_id, 300, "usd", f"Manual {payment_method} payment submitted")
             )
         else:
             conn.execute(
                 """INSERT INTO payments (user_id, amount, currency, status, description)
                    VALUES (?, ?, ?, 'pending', ?)""",
-                (user_id, 500, "usd", f"Manual {payment_method} payment submitted")
+                (user_id, 300, "usd", f"Manual {payment_method} payment submitted")
             )
 
         conn.commit()
@@ -481,7 +481,7 @@ def approve_submission(submission_id: int, admin_user_id: int) -> bool:
             (admin_user_id, submission_id)
         )
 
-        # Activate user subscription (1 month per $5)
+        # Activate user subscription (1 month per $3)
         conn.execute(
             """UPDATE users SET
                 subscription_status = 'active',
