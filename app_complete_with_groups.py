@@ -44,25 +44,29 @@ from log_util import configure_app_logging, get_logger
 
 # S3 storage (optional, for production)
 S3_BUCKET = os.environ.get("S3_BUCKET_NAME", "flask-auth-app-uploads")
-S3_ENABLED = bool(os.environ.get("S3_BUCKET_NAME")) or os.path.exists("/.dockerenv")
 
-# Check if credentials are available (env vars or IAM role on ECS)
+# Try S3 when bucket name is available (always has default).
+# On local dev without AWS creds, head_bucket will fail → gracefully falls back to filesystem.
+# On ECS, boto3 auto-discovers IAM role credentials.
+S3_ENABLED = bool(S3_BUCKET)
+
+# Exception: only skip on local dev when running from your Mac without AWS env vars
+# (so local flask reloader doesn't delay startup trying to connect to S3)
 has_env_creds = bool(os.environ.get("AWS_ACCESS_KEY_ID")) and bool(os.environ.get("AWS_SECRET_ACCESS_KEY"))
-is_docker = os.path.exists("/.dockerenv")
+try:
+    import platform
+    is_mac = platform.system() == "Darwin"
+except Exception:
+    is_mac = False
 
-# On ECS (Docker), boto3 uses IAM role — no env vars needed
-# On local dev, we need explicit env vars
-if is_docker:
-    # In Docker: assume credentials come from IAM role or ECS task role
-    S3_ENABLED = S3_ENABLED
-else:
-    # Local dev: only enable if explicit AWS env vars are provided
-    S3_ENABLED = S3_ENABLED and has_env_creds
+if is_mac and not has_env_creds:
+    S3_ENABLED = False
 
 s3_client = None
 if S3_ENABLED:
     try:
         import boto3
+        # In ECS, boto3 auto-discovers IAM role credentials from the metadata service
         s3_client = boto3.client("s3", region_name="us-east-1")
         # Verify bucket exists / is accessible
         s3_client.head_bucket(Bucket=S3_BUCKET)
