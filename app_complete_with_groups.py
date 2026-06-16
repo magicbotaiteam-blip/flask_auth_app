@@ -72,6 +72,8 @@ if S3_ENABLED:
         S3_ENABLED = False
         s3_client = None
 
+print(f"S3_ENABLED={S3_ENABLED} s3_client={'yes' if s3_client else 'no'}")
+
 # Load .env file for local dev (silently ignore if not present, e.g. in Docker)
 # Skip in production when env vars are set via build args or system env.
 if not os.environ.get('SKIP_DOTENV'):
@@ -2542,12 +2544,15 @@ def bot_files(bot_id):
     # Get files from the bot's file folder
     file_folder = bot_dict.get("file_folder", "")
     files = []
+    app_logger.info(f"[BOT_FILES] bot_id={bot_id} file_folder='{file_folder}' S3_ENABLED={S3_ENABLED} s3_client={'yes' if s3_client else 'no'}")
     if file_folder:
         if S3_ENABLED and s3_client:
             # List files from S3
             prefix = file_folder.strip("/")
+            app_logger.info(f"[BOT_FILES] Listing S3 prefix='{prefix}/' bucket={S3_BUCKET}")
             try:
                 resp = s3_client.list_objects_v2(Bucket=S3_BUCKET, Prefix=prefix + "/")
+                app_logger.info(f"[BOT_FILES] S3 response: KeyCount={resp.get('KeyCount', 0)}, HasContents={'Contents' in resp}")
                 for obj in resp.get("Contents", []):
                     key = obj["Key"]
                     filename = key[len(prefix)+1:]
@@ -2559,6 +2564,7 @@ def bot_files(bot_id):
                         "modified": obj["LastModified"].strftime("%Y-%m-%d %H:%M:%S"),
                         "s3_key": key
                     })
+                app_logger.info(f"[BOT_FILES] Parsed {len(files)} file entries")
             except Exception as e:
                 app_logger.error(f"[S3] Error listing objects at prefix '{prefix}/': {e}")
         elif os.path.exists(file_folder):
