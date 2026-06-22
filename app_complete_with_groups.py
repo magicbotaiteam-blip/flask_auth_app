@@ -591,11 +591,6 @@ def learn():
                          role=session.get("role", "customer"))
 
 
-@app.route("/pricing")
-def pricing():
-    """Pricing page"""
-    return render_template("pricing.html")
-
 @app.route("/referral-program")
 def referral_program():
     """Public referral program page"""
@@ -1629,7 +1624,7 @@ def api_subscribe():
     url = create_checkout_session(
         user_id,
         success_url=f"{request.host_url.rstrip('/')}/billing?session_id={{CHECKOUT_SESSION_ID}}",
-        cancel_url=f"{request.host_url.rstrip('/')}/pricing",
+        cancel_url=f"{request.host_url.rstrip('/')}/billing",
     )
     if url:
         return jsonify({"url": url})

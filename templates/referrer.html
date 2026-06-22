@@ -159,28 +159,6 @@
         {% endif %}
     </div>
 
-    <!-- Free Trial Bonus Banner -->
-    {% if trial_info and not trial_info.get('admin') %}
-    <div class="row mb-3">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%); color: white;">
-                <div class="card-body p-3 text-center">
-                    <h5 class="mb-2"><i class="bi bi-gift-fill"></i> Earn Free Trial Months!</h5>
-                    <p class="mb-1">For every friend who signs up using your link, <strong>you get +1 free month</strong> added to your trial!</p>
-                    <p class="mb-0 small opacity-75">
-                        Current: {% if trial_info.bonus_months > 0 %}
-                            <strong>{{ trial_info.bonus_months }} bonus months</strong> earned
-                        {% else %}
-                            No bonus months yet — refer someone to start earning!
-                        {% endif %}
-                        &middot; Trial days remaining: <strong>{{ trial_info.days_remaining }}</strong>
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
     <!-- Reward Tiers -->
     <div class="row mb-4">
         <div class="col-12">
