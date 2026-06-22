@@ -72,44 +72,6 @@
         </div>
         {% endif %}
 
-        <!-- Free Trial Banner -->
-        {% if trial_info and not trial_info.get('admin') and not trial_info.expired %}
-        <div class="alert alert-{{ 'warning' if trial_info.days_remaining <= 15 else 'info' }} alert-dismissible fade show" role="alert" style="border-left: 5px solid {{ '#ffc107' if trial_info.days_remaining <= 15 else '#0dcaf0' }};">
-            <div class="d-flex align-items-center justify-content-between flex-wrap">
-                <div class="d-flex align-items-center">
-                    {% if trial_info.days_remaining <= 15 and trial_info.days_remaining > 0 %}
-                        <i class="bi bi-exclamation-triangle-fill fs-3 me-3 text-warning"></i>
-                    {% elif trial_info.days_remaining == 0 %}
-                        <i class="bi bi-exclamation-triangle-fill fs-3 me-3 text-danger"></i>
-                    {% else %}
-                        <i class="bi bi-gift-fill fs-3 me-3 text-info"></i>
-                    {% endif %}
-                    <div>
-                        <strong>
-                            {% if trial_info.days_remaining <= 15 and trial_info.days_remaining > 0 %}
-                                Free Trial Ending Soon!
-                            {% elif trial_info.days_remaining == 0 %}
-                                Last Day of Free Trial!
-                            {% else %}
-                                Free Trial Active
-                            {% endif %}
-                        </strong><br>
-                        You have <strong>{{ trial_info.days_remaining }}</strong> days remaining.
-                        Trial ends {{ trial_info.trial_end[:10] }}.
-                        {% if trial_info.bonus_months > 0 %}
-                            <span class="text-success">(+{{ trial_info.bonus_months }} free months from referrals)</span>
-                        {% endif %}
-                        <span>Earn more free months by referring friends!</span>
-                    </div>
-                </div>
-                <a href="/referrer" class="btn btn-sm btn-outline-success mt-2 mt-md-0">
-                    <i class="bi bi-people"></i> Refer &amp; Get Free Months
-                </a>
-            </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endif %}
-
         <!-- Quick Actions -->
         <div class="row mb-4">
             <div class="col">
