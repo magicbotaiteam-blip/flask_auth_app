@@ -253,6 +253,26 @@ def init_db_complete():
     except Exception as e:
         print(f"Bot column migration error (non-fatal): {e}")
 
+    # Contacts migration: ip_address, user_agent columns
+    try:
+        if pg:
+            # PostgreSQL supports IF NOT EXISTS
+            conn.execute("ALTER TABLE contacts ADD COLUMN IF NOT EXISTS ip_address TEXT")
+            conn.execute("ALTER TABLE contacts ADD COLUMN IF NOT EXISTS user_agent TEXT")
+        else:
+            # SQLite - catch errors if column already exists
+            try:
+                conn.execute("ALTER TABLE contacts ADD COLUMN ip_address TEXT")
+            except Exception:
+                pass
+            try:
+                conn.execute("ALTER TABLE contacts ADD COLUMN user_agent TEXT")
+            except Exception:
+                pass
+        conn.commit()
+    except Exception as e:
+        print(f"Contacts column migration error (non-fatal): {e}")
+
     conn.execute(f"""
         CREATE TABLE IF NOT EXISTS roles (
             id {pk},
@@ -643,19 +663,34 @@ def handle_contact_form():
         cursor = conn.cursor()
 
         # Create contacts table if it doesn't exist
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS contacts (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                name TEXT NOT NULL,
-                email TEXT NOT NULL,
-                company TEXT,
-                message TEXT NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                status TEXT DEFAULT 'new',
-                ip_address TEXT,
-                user_agent TEXT
-            )
-        """)
+        if _is_pg():
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS contacts (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    company TEXT,
+                    message TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT 'new',
+                    ip_address TEXT,
+                    user_agent TEXT
+                )
+            """)
+        else:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS contacts (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    name TEXT NOT NULL,
+                    email TEXT NOT NULL,
+                    company TEXT,
+                    message TEXT NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    status TEXT DEFAULT 'new',
+                    ip_address TEXT,
+                    user_agent TEXT
+                )
+            """)
 
         # Insert contact
         cursor.execute("""
